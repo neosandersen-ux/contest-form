@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Подання заявки на конкурс</title>
+  <title>Подання заявки на фотоконкурс</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -12,9 +12,10 @@
       --card-bg: #ffffff;
       --text: #0f172a;
       --border: #cbd5e1;
-      --error: #ef4444;
+      --error: #dc2626;
       --success: #16a34a;
       --muted: #64748b;
+      --warn: #d97706;
     }
 
     * {
@@ -34,7 +35,7 @@
     
     .container {
       width: 100%;
-      max-width: 620px;
+      max-width: 640px;
       background: var(--card-bg);
       padding: 2.5rem;
       border-radius: 12px;
@@ -43,8 +44,23 @@
 
     h1 {
       font-size: 1.5rem;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
       text-align: center;
+    }
+
+    .requirements-box {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid var(--primary);
+      padding: 0.9rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: #334155;
+    }
+
+    .requirements-box strong {
       color: var(--text);
     }
     
@@ -133,13 +149,15 @@
     }
     
     .status-msg {
-      font-size: 0.8rem;
-      margin-top: 0.4rem;
+      font-size: 0.82rem;
+      margin-top: 0.45rem;
+      line-height: 1.35;
       min-height: 1.2rem;
     }
 
     .status-msg.error { color: var(--error); }
     .status-msg.success { color: var(--success); }
+    .status-msg.pending { color: var(--warn); }
 
     button {
       width: 100%;
@@ -162,7 +180,12 @@
 <body>
 
 <div class="container">
-  <h1>Подання заявки на конкурс</h1>
+  <h1>Подання заявки на фотоконкурс</h1>
+
+  <div class="requirements-box">
+    <strong>Вимоги до фотофайлу:</strong> оригінальний формат <strong>JPEG/JPG</strong> (без ZIP/RAR), розмір від <strong>2 до 20 МБ</strong>, роздільна здатність від <strong>2400 px</strong> (рекомендовано 3000–4000 px) по довгій стороні. Зображення без рамок, водяних знаків та підписів.
+  </div>
+
   <form id="contestForm" autocomplete="off">
     <div class="form-group">
       <label for="fullName">ПІБ учасника</label>
@@ -187,7 +210,6 @@
       <div class="autocomplete-dropdown" id="settlementDropdown"></div>
       <div class="hierarchy-badge" id="hierarchyInfo"></div>
 
-      <!-- Скрытые параметры для таблицы -->
       <input type="hidden" id="district" name="district">
       <input type="hidden" id="hromada" name="hromada">
       <input type="hidden" id="settlementCategory" name="settlementCategory">
@@ -214,20 +236,24 @@
       <label for="category">Номінація</label>
       <select id="category" name="category" required>
         <option value="" disabled selected>Оберіть номінацію...</option>
-        <option value="Номінація 1">Номінація 1</option>
-        <option value="Номінація 2">Номінація 2</option>
-        <option value="Номінація 3">Номінація 3</option>
+        <option value="Пейзаж">Пейзаж</option>
+        <option value="Портрет">Портрет</option>
+        <option value="Флора і фауна">Флора і фауна</option>
+        <option value="Архітектура">Архітектура</option>
+        <option value="Експериментальне фото">Експериментальне фото</option>
       </select>
     </div>
 
     <div class="form-group">
-      <label for="workTitle">Назва роботи</label>
-      <input type="text" id="workTitle" name="workTitle" placeholder="Введіть назву проекту" required>
+      <label for="workTitle">Назва фотороботи</label>
+      <input type="text" id="workTitle" name="workTitle" placeholder="Введіть авторську назву фотографії" required>
     </div>
 
+    <!-- Поле ссылки на Google Диск с проверкой техтребований -->
     <div class="form-group">
-      <label for="driveUrl">Посилання на роботу (Google Диск)</label>
-      <input type="url" id="driveUrl" name="driveUrl" placeholder="https://drive.google.com/..." required>
+      <label for="driveUrl">Посилання на фотографію (Google Диск)</label>
+      <div class="hint">Посилання на конкретний файл зображення (папки та архіви ZIP не приймаються)</div>
+      <input type="url" id="driveUrl" name="driveUrl" placeholder="https://drive.google.com/file/d/..." required>
       <span class="status-msg" id="driveStatus"></span>
     </div>
 
@@ -256,7 +282,7 @@
   const zpoInput = document.getElementById('zpoSchool');
   const zpoDropdown = document.getElementById('zpoDropdown');
 
-  // Поиск для учебных заведений
+  // Поиск по учреждениям
   function setupAutocomplete(input, dropdown, getItems) {
     function render() {
       const query = input.value.trim().toLowerCase();
@@ -298,7 +324,7 @@
     input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
   }
 
-  // Поиск населенных пунктов КАТОТТГ
+  // Поиск по КАТОТТГ
   function setupSettlementAutocomplete() {
     function render() {
       const query = settlementInput.value.trim().toLowerCase();
@@ -353,20 +379,18 @@
     settlementInput.addEventListener('blur', () => setTimeout(() => { settlementDropdown.style.display = 'none'; }, 200));
   }
 
-  // Загрузка баз данных
+  // Загрузка списков
   window.addEventListener('DOMContentLoaded', async () => {
-    // 1. Загрузка settlements.json
     try {
       const sRes = await fetch('./settlements.json');
       settlementsData = await sRes.json();
       setupSettlementAutocomplete();
       settlementInput.placeholder = "Почніть вводити назву населеного пункту...";
     } catch (e) {
-      console.warn('Файл settlements.json не знайдено:', e);
+      console.warn('settlements.json не знайдено:', e);
       settlementInput.placeholder = "Введіть назву населеного пункту...";
     }
 
-    // 2. Загрузка учреждений из Apps Script
     try {
       const res = await fetch(SCRIPT_URL);
       const data = await res.json();
@@ -381,59 +405,71 @@
     }
   });
 
-  // Валидация ссылки Google Drive
+  // Валидация Google Диска и проверка технических параметров фото
   const driveInput = document.getElementById('driveUrl');
   const driveStatus = document.getElementById('driveStatus');
   const submitBtn = document.getElementById('submitBtn');
   const form = document.getElementById('contestForm');
 
+  let isPhotoValidated = false;
+
   function extractDriveId(url) {
+    if (url.includes('/folders/')) {
+      return { id: null, error: 'Посилання веде на папку. Надайте пряме посилання на файл фотографії.' };
+    }
     const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (fileMatch) return { id: fileMatch[1], type: 'file' };
-    const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
-    if (folderMatch) return { id: folderMatch[1], type: 'folder' };
+    if (fileMatch) return { id: fileMatch[1] };
+
     const openMatch = url.match(/id=([a-zA-Z0-9_-]+)/);
-    if (openMatch) return { id: openMatch[1], type: 'file' };
-    return null;
+    if (openMatch) return { id: openMatch[1] };
+
+    return { id: null, error: 'Некоректний формат посилання на Google Диск.' };
   }
 
-  driveInput.addEventListener('blur', () => {
+  driveInput.addEventListener('blur', async () => {
     const url = driveInput.value.trim();
     driveStatus.className = 'status-msg';
     driveStatus.textContent = '';
+    isPhotoValidated = false;
+
     if (!url) return;
 
     const parsed = extractDriveId(url);
-    if (!parsed) {
+    if (parsed.error) {
       driveStatus.className = 'status-msg error';
-      driveStatus.textContent = 'Некоректне посилання на Google Диск';
+      driveStatus.textContent = '❌ ' + parsed.error;
       return;
     }
 
-    if (parsed.type === 'file') {
-      driveStatus.textContent = 'Перевіряємо доступність файлу...';
-      const checkImg = new Image();
-      checkImg.src = `https://drive.google.com/thumbnail?id=${parsed.id}&sz=w100`;
-      checkImg.onload = () => {
+    driveStatus.className = 'status-msg pending';
+    driveStatus.textContent = '⏳ Перевіряємо доступ та технічні вимоги (формат, розмір, роздільну здатність)...';
+
+    try {
+      const res = await fetch(`${SCRIPT_URL}?action=checkPhoto&fileId=${parsed.id}`);
+      const check = await res.json();
+
+      if (check.valid) {
         driveStatus.className = 'status-msg success';
-        driveStatus.textContent = 'Файл знайдено, доступ відкритий';
-      };
-      checkImg.onerror = () => {
+        driveStatus.textContent = '✅ ' + check.message;
+        isPhotoValidated = true;
+      } else {
         driveStatus.className = 'status-msg error';
-        driveStatus.textContent = 'Файл недоступний. Відкрийте «Загальний доступ для всіх за посиланням»';
-      };
-    } else {
-      driveStatus.className = 'status-msg success';
-      driveStatus.textContent = 'Формат посилання вірний (переконайтеся, що доступ відкритий)';
+        driveStatus.textContent = '❌ ' + check.message;
+        isPhotoValidated = false;
+      }
+    } catch (err) {
+      driveStatus.className = 'status-msg error';
+      driveStatus.textContent = '⚠️ Не вдалося зв\'язатися з сервером перевірки. Переконайтеся, що доступ відкритий.';
     }
   });
 
-  // Отправка с чтением подтверждения от сервера
+  // Отправка заявки
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    if (driveStatus.classList.contains('error')) {
-      alert('Будь ласка, відкрийте доступ до файлу на Google Диску перед надсиланням заявки.');
+    if (!isPhotoValidated) {
+      alert('Будь ласка, вкажіть коректне посилання на фотографію, що відповідає технічним вимогам (JPEG, 2–20 МБ, від 2400 px).');
+      driveInput.focus();
       return;
     }
 
@@ -460,11 +496,12 @@
       const result = await response.json();
 
       if (result.status === 'success') {
-        alert(`✅ Заявку успішно збережено в базі під номером #${result.row - 1}!`);
+        alert(`✅ Заявку успішно зареєстровано під номером #${result.row - 1}!`);
         form.reset();
         hierarchyInfo.style.display = 'none';
         driveStatus.textContent = '';
         driveStatus.className = 'status-msg';
+        isPhotoValidated = false;
       } else {
         throw new Error(result.message || 'Помилка на боці сервера');
       }
@@ -474,7 +511,7 @@
       console.error('Помилка відправки:', err);
       
       if (err.name === 'AbortError') {
-        alert('❌ Час очікування вичерпано. Перевірте інтернет-з\'єднання та спробуйте ще раз.');
+        alert('❌ Час очікування вичерпано. Перевірте з\'єднання та спробуйте ще раз.');
       } else {
         alert(`❌ Помилка запису: ${err.message || 'Не вдалося зв\'язатися з базою даних'}`);
       }
