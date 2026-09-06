@@ -16,8 +16,20 @@
       --success: #16a34a;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; display: flex; justify-content: center; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
     
     .container {
       width: 100%;
@@ -28,10 +40,23 @@
       box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
     }
 
-    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
     
-    .form-group { margin-bottom: 1.25rem; display: flex; flex-direction: column; }
-    label { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .form-group {
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
     
     input, select {
       padding: 0.75rem;
@@ -42,13 +67,16 @@
       transition: border-color 0.2s;
     }
 
-    input:focus, select:focus { border-color: var(--primary); }
+    input:focus, select:focus {
+      border-color: var(--primary);
+    }
     
     .status-msg {
       font-size: 0.8rem;
       margin-top: 0.4rem;
       min-height: 1.2rem;
     }
+
     .status-msg.error { color: var(--error); }
     .status-msg.success { color: var(--success); }
 
@@ -111,12 +139,13 @@
 </div>
 
 <script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_k7W0ad2WjI1zolOdwYR943rrCZEfYpXQrVLefVodWfSwZXrTVf2X1lANVGLcvnUJ/exec';
+
   const driveInput = document.getElementById('driveUrl');
   const driveStatus = document.getElementById('driveStatus');
   const submitBtn = document.getElementById('submitBtn');
   const form = document.getElementById('contestForm');
 
-  // Извлечение ID файла или папки из любого типа ссылки Google Drive
   function extractDriveId(url) {
     const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     if (fileMatch) return { id: fileMatch[1], type: 'file' };
@@ -130,8 +159,7 @@
     return null;
   }
 
-  // Валидация ссылки и проверка открытости файла
-  driveInput.addEventListener('blur', async () => {
+  driveInput.addEventListener('blur', () => {
     const url = driveInput.value.trim();
     driveStatus.className = 'status-msg';
     driveStatus.textContent = '';
@@ -146,7 +174,6 @@
       return;
     }
 
-    // Для файлов проверяем доступность через загрузку превью
     if (parsed.type === 'file') {
       driveStatus.textContent = 'Проверяем доступность файла...';
       
@@ -163,13 +190,12 @@
         driveStatus.textContent = 'Файл недоступен. Откройте «Общий доступ для всех по ссылке»';
       };
     } else {
-      // Для папок Google не отдает публичный thumbnail, поэтому валидируем синтаксис
       driveStatus.className = 'status-msg success';
       driveStatus.textContent = 'Формат ссылки на папку верный (убедитесь, что доступ открыт)';
     }
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     if (driveStatus.classList.contains('error')) {
@@ -177,12 +203,33 @@
       return;
     }
 
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Отправка...';
+
     const formData = new FormData(form);
     const payload = Object.fromEntries(formData.entries());
 
-    console.log('Данные готовы к отправке:', payload);
-    alert('Форма заполнена корректно!');
-    // Сюда подключим отправку на сервер/таблицу
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      alert('Заявка успешно отправлена!');
+      form.reset();
+      driveStatus.textContent = '';
+      driveStatus.className = 'status-msg';
+    } catch (err) {
+      alert('Произошла ошибка при отправке заявки. Попробуйте еще раз.');
+      console.error(err);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Отправить заявку';
+    }
   });
 </script>
 
