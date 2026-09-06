@@ -422,7 +422,7 @@
     return { id: null, error: 'Некоректний формат посилання на Google Диск.' };
   }
 
-  // Надежная валидация фото через POST-запрос
+  // Проверка параметров фото через POST с детальной диагностикой
   driveInput.addEventListener('blur', async () => {
     const url = driveInput.value.trim();
     driveStatus.className = 'status-msg';
@@ -453,14 +453,24 @@
         body: checkParams.toString()
       });
 
-      const check = await res.json();
+      const rawText = await res.text();
+      console.log('Відповідь сервера:', rawText);
+
+      let check;
+      try {
+        check = JSON.parse(rawText);
+      } catch (jsonErr) {
+        driveStatus.className = 'status-msg error';
+        driveStatus.textContent = '❌ Помилка: сервер повернув не JSON: ' + rawText.substring(0, 100);
+        return;
+      }
 
       if (check && check.valid) {
         driveStatus.className = 'status-msg success';
         driveStatus.textContent = '✅ ' + check.message;
         isPhotoValidated = true;
       } else {
-        const errorText = (check && check.message) ? check.message : 'Файл не відповідає технічним вимогам конкурсу.';
+        const errorText = (check && check.message) ? check.message : JSON.stringify(check);
         driveStatus.className = 'status-msg error';
         driveStatus.textContent = '❌ ' + errorText;
         isPhotoValidated = false;
@@ -468,12 +478,12 @@
     } catch (err) {
       console.error('Помилка валідації:', err);
       driveStatus.className = 'status-msg error';
-      driveStatus.textContent = '❌ Не вдалося зв\'язатися з сервером перевірки. Перевірте відкритий доступ до файлу.';
+      driveStatus.textContent = '❌ Не вдалося з\'єднатися із сервером: ' + err.message;
       isPhotoValidated = false;
     }
   });
 
-  // Отправка заявки
+  // Отправка заявки в Google Таблицу
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -495,7 +505,9 @@
     try {
       const response = await fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
         body: searchParams.toString(),
         signal: controller.signal
       });
