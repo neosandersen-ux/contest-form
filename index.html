@@ -23,6 +23,17 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    input, select, textarea {
+      -webkit-user-select: auto;
+      -moz-user-select: auto;
+      -ms-user-select: auto;
+      user-select: auto;
     }
 
     body {
@@ -197,7 +208,6 @@
       <input type="date" id="birthDate" name="birthDate" required>
     </div>
 
-    <!-- 1. Населений пункт (КАТОТТГ) -->
     <div class="form-group">
       <label for="settlementInput">Населений пункт</label>
       <div class="hint">Введіть назву міста, селища чи села (наприклад: Дніпро, Вербки, Слобожанське)</div>
@@ -216,7 +226,6 @@
       <input type="hidden" id="settlementName" name="settlementName">
     </div>
 
-    <!-- 2. Основний заклад освіти -->
     <div class="form-group">
       <label for="mainSchool">Основний заклад освіти (школа, ліцей, ПТНЗ, ІРЦ)</label>
       <div class="hint">Введіть будь-яке слово з назви закладу або його номер</div>
@@ -224,7 +233,6 @@
       <div class="autocomplete-dropdown" id="mainDropdown"></div>
     </div>
 
-    <!-- 3. ЗПО -->
     <div class="form-group">
       <label for="zpoSchool">Заклад позашкільної освіти (ЗПО)</label>
       <div class="hint">Заповнюється, якщо роботу виконано в гуртку / секції (необов'язково)</div>
@@ -249,7 +257,6 @@
       <input type="text" id="workTitle" name="workTitle" placeholder="Введіть авторську назву фотографії" required>
     </div>
 
-    <!-- Поле ссылки на Google Диск -->
     <div class="form-group">
       <label for="driveUrl">Посилання на фотографію (Google Диск)</label>
       <div class="hint">Посилання на файл фотографії (папки та архіви ZIP заборонені)</div>
@@ -262,6 +269,53 @@
 </div>
 
 <script>
+  // ==========================================
+  // БЛОК ЗАЩИТЫ ОТ ПРОСМОТРА И КОПИРОВАНИЯ
+  // ==========================================
+
+  // Блокировка контекстного меню
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+  });
+
+  // Блокировка вызова DevTools и горячих клавиш исходного кода
+  document.addEventListener('keydown', function(e) {
+    const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+
+    // F12
+    if (e.key === 'F12' || e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+
+    // Ctrl+U / Cmd+Opt+U (View Source)
+    if (isCtrlOrCmd && (e.key === 'u' || e.key === 'U' || e.keyCode === 85)) {
+      e.preventDefault();
+      return false;
+    }
+
+    // Ctrl+S / Cmd+S (Save Page)
+    if (isCtrlOrCmd && (e.key === 's' || e.key === 'S' || e.keyCode === 83)) {
+      e.preventDefault();
+      return false;
+    }
+
+    // Ctrl+Shift+I / Cmd+Opt+I (DevTools Elements)
+    // Ctrl+Shift+J / Cmd+Opt+J (DevTools Console)
+    // Ctrl+Shift+C / Cmd+Opt+C (Inspect Element)
+    if (isCtrlOrCmd && e.shiftKey) {
+      const code = e.keyCode;
+      const key = e.key ? e.key.toUpperCase() : '';
+      if (code === 73 || code === 74 || code === 67 || key === 'I' || key === 'J' || key === 'C') {
+        e.preventDefault();
+        return false;
+      }
+    }
+  });
+
+  // ==========================================
+  // ОСНОВНОЙ ФУНКЦИОНАЛ ФОРМЫ
+  // ==========================================
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_k7W0ad2WjI1zolOdwYR943rrCZEfYpXQrVLefVodWfSwZXrTVf2X1lANVGLcvnUJ/exec';
 
   let settlementsData = [];
@@ -360,7 +414,7 @@
           hierarchyInfo.innerHTML = `📍 <strong>${item.district}</strong> | <strong>${item.hromada}</strong>`;
           settlementDropdown.style.display = 'none';
         });
-        settlementDropdown.appendChild(div);
+        dropdown.appendChild(div);
       });
       settlementDropdown.style.display = 'block';
     }
@@ -423,7 +477,7 @@
     return { id: null, error: 'Некоректний формат посилання на Google Диск.' };
   }
 
-  // Проверка параметров фото с отменой дублирующихся запросов
+  // Валидация технических параметров фото
   driveInput.addEventListener('blur', async () => {
     const url = driveInput.value.trim();
     driveStatus.className = 'status-msg';
@@ -491,7 +545,7 @@
     }
   });
 
-  // Отправка заявки с обратной верификацией сохранения в таблице
+  // Отправка заявки с обратной верификацией записи в таблице
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
