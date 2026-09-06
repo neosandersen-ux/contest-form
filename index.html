@@ -17,35 +17,19 @@
       --muted: #64748b;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      padding: 2rem 1rem;
-      display: flex;
-      justify-content: center;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; display: flex; justify-content: center; }
     
     .container {
       width: 100%;
-      max-width: 600px;
+      max-width: 620px;
       background: var(--card-bg);
       padding: 2.5rem;
       border-radius: 12px;
       box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
     }
 
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
     
     .form-group {
       margin-bottom: 1.25rem;
@@ -54,17 +38,8 @@
       position: relative;
     }
 
-    label {
-      font-size: 0.875rem;
-      font-weight: 600;
-      margin-bottom: 0.3rem;
-    }
-
-    .hint {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-bottom: 0.4rem;
-    }
+    label { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
     
     input, select {
       padding: 0.75rem;
@@ -76,11 +51,19 @@
       width: 100%;
     }
 
-    input:focus, select:focus {
-      border-color: var(--primary);
+    input:focus, select:focus { border-color: var(--primary); }
+
+    .hierarchy-badge {
+      font-size: 0.78rem;
+      background-color: #f1f5f9;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      margin-top: 0.4rem;
+      color: #334155;
+      display: none;
+      line-height: 1.4;
     }
 
-    /* Кастомное выпадающее меню с поиском по любым словам */
     .autocomplete-dropdown {
       position: absolute;
       top: 100%;
@@ -99,35 +82,17 @@
 
     .autocomplete-item {
       padding: 0.7rem 0.9rem;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       line-height: 1.35;
       cursor: pointer;
       border-bottom: 1px solid #f1f5f9;
-      transition: background 0.15s;
     }
 
-    .autocomplete-item:last-child {
-      border-bottom: none;
-    }
-
-    .autocomplete-item:hover, .autocomplete-item.active {
-      background-color: #eff6ff;
-      color: var(--primary);
-    }
-
-    .autocomplete-item mark {
-      background: #fef08a;
-      color: inherit;
-      padding: 0 2px;
-      border-radius: 2px;
-    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background-color: #eff6ff; color: var(--primary); }
+    .autocomplete-item mark { background: #fef08a; padding: 0 2px; border-radius: 2px; }
     
-    .status-msg {
-      font-size: 0.8rem;
-      margin-top: 0.4rem;
-      min-height: 1.2rem;
-    }
-
+    .status-msg { font-size: 0.8rem; margin-top: 0.4rem; min-height: 1.2rem; }
     .status-msg.error { color: var(--error); }
     .status-msg.success { color: var(--success); }
 
@@ -164,30 +129,39 @@
       <input type="date" id="birthDate" name="birthDate" required>
     </div>
 
-    <!-- Поле 1: Основное заведение -->
+    <!-- Поле: Населенный пункт (КАТОТТГ) -->
+    <div class="form-group">
+      <label for="settlementInput">Населений пункт</label>
+      <div class="hint">Почніть вводити назву міста, селища чи села</div>
+      <input 
+        type="text" 
+        id="settlementInput" 
+        placeholder="Завантаження довідника населених пунктів..." 
+        required
+      >
+      <div class="autocomplete-dropdown" id="settlementDropdown"></div>
+      <div class="hierarchy-badge" id="hierarchyInfo"></div>
+
+      <!-- Скрытые поля для передачи полной иерархии -->
+      <input type="hidden" id="district" name="district">
+      <input type="hidden" id="hromada" name="hromada">
+      <input type="hidden" id="settlementCategory" name="settlementCategory">
+      <input type="hidden" id="settlementName" name="settlementName">
+    </div>
+
+    <!-- Поле: Основное заведение -->
     <div class="form-group">
       <label for="mainSchool">Основний заклад освіти (школа, ліцей, ПТНЗ, ІРЦ)</label>
       <div class="hint">Введіть будь-яке слово з назви або місто</div>
-      <input 
-        type="text" 
-        id="mainSchool" 
-        name="mainSchool" 
-        placeholder="Завантаження списку закладів..." 
-        required
-      >
+      <input type="text" id="mainSchool" name="mainSchool" placeholder="Почніть вводити назву..." required>
       <div class="autocomplete-dropdown" id="mainDropdown"></div>
     </div>
 
-    <!-- Поле 2: Внешкольное заведение (ЗПО) -->
+    <!-- Поле: ЗПО -->
     <div class="form-group">
       <label for="zpoSchool">Заклад позашкільної освіти (ЗПО)</label>
-      <div class="hint">Введіть будь-яке слово з назви (наприклад: учнів, творчості, доцнттум)</div>
-      <input 
-        type="text" 
-        id="zpoSchool" 
-        name="zpoSchool" 
-        placeholder="Оберіть зі списку або залиште порожнім..."
-      >
+      <div class="hint">Заповнюється, якщо роботу виконано в гуртку/клубі (необов'язково)</div>
+      <input type="text" id="zpoSchool" name="zpoSchool" placeholder="Оберіть зі списку або залиште порожнім...">
       <div class="autocomplete-dropdown" id="zpoDropdown"></div>
     </div>
 
@@ -219,53 +193,51 @@
 <script>
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_k7W0ad2WjI1zolOdwYR943rrCZEfYpXQrVLefVodWfSwZXrTVf2X1lANVGLcvnUJ/exec';
 
+  let settlementsData = [];
   let mainData = [];
   let zpoData = [];
 
+  const settlementInput = document.getElementById('settlementInput');
+  const settlementDropdown = document.getElementById('settlementDropdown');
+  const hierarchyInfo = document.getElementById('hierarchyInfo');
+
+  const districtField = document.getElementById('district');
+  const hromadaField = document.getElementById('hromada');
+  const catField = document.getElementById('settlementCategory');
+  const nameField = document.getElementById('settlementName');
+
   const mainInput = document.getElementById('mainSchool');
   const mainDropdown = document.getElementById('mainDropdown');
-
   const zpoInput = document.getElementById('zpoSchool');
   const zpoDropdown = document.getElementById('zpoDropdown');
 
-  // Универсальный умный поиск по любым подстрокам и словам
+  // Поиск для текстовых массивов
   function setupAutocomplete(input, dropdown, getItems) {
-    function filterAndRender() {
+    function render() {
       const query = input.value.trim().toLowerCase();
       dropdown.innerHTML = '';
+      if (!query) { dropdown.style.display = 'none'; return; }
 
-      if (!query) {
-        dropdown.style.display = 'none';
-        return;
-      }
-
-      // Разбиваем введенный текст на отдельные слова для поиска
-      const queryWords = query.split(/\s+/).filter(Boolean);
+      const words = query.split(/\s+/).filter(Boolean);
       const items = getItems();
 
-      // Находим все записи, содержащие ВСЕ введенные слова в любой части названия
       const matches = items.filter(item => {
-        const itemLower = item.toLowerCase();
-        return queryWords.every(word => itemLower.includes(word));
-      }).slice(0, 35); // выводим до 35 совпадений
+        const lower = item.toLowerCase();
+        return words.every(w => lower.includes(w));
+      }).slice(0, 35);
 
-      if (matches.length === 0) {
-        dropdown.style.display = 'none';
-        return;
-      }
+      if (!matches.length) { dropdown.style.display = 'none'; return; }
 
       matches.forEach(item => {
         const div = document.createElement('div');
         div.className = 'autocomplete-item';
 
-        // Подсвечиваем найденные слова
-        let highlighted = item;
-        queryWords.forEach(word => {
-          const regex = new RegExp(`(${word})`, 'gi');
-          highlighted = highlighted.replace(regex, '<mark>$1</mark>');
+        let text = item;
+        words.forEach(w => {
+          text = text.replace(new RegExp(`(${w})`, 'gi'), '<mark>$1</mark>');
         });
 
-        div.innerHTML = highlighted;
+        div.innerHTML = text;
         div.addEventListener('mousedown', (e) => {
           e.preventDefault();
           input.value = item;
@@ -273,40 +245,92 @@
         });
         dropdown.appendChild(div);
       });
-
       dropdown.style.display = 'block';
     }
 
-    input.addEventListener('input', filterAndRender);
-    input.addEventListener('focus', filterAndRender);
-    input.addEventListener('blur', () => {
-      // Прячем меню при потере фокуса
-      setTimeout(() => { dropdown.style.display = 'none'; }, 200);
-    });
+    input.addEventListener('input', render);
+    input.addEventListener('focus', render);
+    input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
   }
 
-  // Загрузка списков заведений
+  // Специальный поиск для КАТОТТГ с привязкой иерархии
+  function setupSettlementAutocomplete() {
+    function render() {
+      const query = settlementInput.value.trim().toLowerCase();
+      settlementDropdown.innerHTML = '';
+      if (!query) { settlementDropdown.style.display = 'none'; return; }
+
+      const words = query.split(/\s+/).filter(Boolean);
+      const matches = settlementsData.filter(item => {
+        const target = `${item.settlement} ${item.hromada} ${item.district}`.toLowerCase();
+        return words.every(w => target.includes(w));
+      }).slice(0, 35);
+
+      if (!matches.length) { settlementDropdown.style.display = 'none'; return; }
+
+      matches.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+
+        let label = item.display;
+        words.forEach(w => {
+          label = label.replace(new RegExp(`(${w})`, 'gi'), '<mark>$1</mark>');
+        });
+
+        div.innerHTML = label;
+        div.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          settlementInput.value = `${item.category} ${item.settlement}`;
+          
+          districtField.value = item.district;
+          hromadaField.value = item.hromada;
+          catField.value = item.category;
+          nameField.value = item.settlement;
+
+          hierarchyInfo.style.display = 'block';
+          hierarchyInfo.innerHTML = `<strong>Район:</strong> ${item.district} | <strong>Громада:</strong> ${item.hromada}`;
+          settlementDropdown.style.display = 'none';
+        });
+        settlementDropdown.appendChild(div);
+      });
+      settlementDropdown.style.display = 'block';
+    }
+
+    settlementInput.addEventListener('input', () => {
+      hierarchyInfo.style.display = 'none';
+      districtField.value = '';
+      hromadaField.value = '';
+      render();
+    });
+    settlementInput.addEventListener('focus', render);
+    settlementInput.addEventListener('blur', () => setTimeout(() => { settlementDropdown.style.display = 'none'; }, 200));
+  }
+
+  // Загрузка всех баз данных
   window.addEventListener('DOMContentLoaded', async () => {
     try {
       const res = await fetch(SCRIPT_URL);
       const data = await res.json();
 
+      settlementsData = data.settlements || [];
       mainData = data.main || [];
       zpoData = data.zpo || [];
 
+      setupSettlementAutocomplete();
       setupAutocomplete(mainInput, mainDropdown, () => mainData);
       setupAutocomplete(zpoInput, zpoDropdown, () => zpoData);
 
+      settlementInput.placeholder = "Почніть вводити назву населеного пункту...";
       mainInput.placeholder = "Почніть вводити назву закладу...";
       zpoInput.placeholder = "Почніть вводити назву закладу...";
     } catch (e) {
-      console.warn('Не вдалося завантажити довідник закладів:', e);
+      console.warn('Помилка завантаження довідників:', e);
+      settlementInput.placeholder = "Введіть населений пункт...";
       mainInput.placeholder = "Введіть назву закладу...";
-      zpoInput.placeholder = "Введіть назву закладу...";
     }
   });
 
-  // Валидация Google Drive
+  // Валидация ссылки Google Drive
   const driveInput = document.getElementById('driveUrl');
   const driveStatus = document.getElementById('driveStatus');
   const submitBtn = document.getElementById('submitBtn');
@@ -315,13 +339,10 @@
   function extractDriveId(url) {
     const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     if (fileMatch) return { id: fileMatch[1], type: 'file' };
-
     const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
     if (folderMatch) return { id: folderMatch[1], type: 'folder' };
-
     const openMatch = url.match(/id=([a-zA-Z0-9_-]+)/);
     if (openMatch) return { id: openMatch[1], type: 'file' };
-
     return null;
   }
 
@@ -329,11 +350,9 @@
     const url = driveInput.value.trim();
     driveStatus.className = 'status-msg';
     driveStatus.textContent = '';
-
     if (!url) return;
 
     const parsed = extractDriveId(url);
-
     if (!parsed) {
       driveStatus.className = 'status-msg error';
       driveStatus.textContent = 'Некоректне посилання на Google Диск';
@@ -342,15 +361,12 @@
 
     if (parsed.type === 'file') {
       driveStatus.textContent = 'Перевіряємо доступність файлу...';
-      
       const checkImg = new Image();
       checkImg.src = `https://drive.google.com/thumbnail?id=${parsed.id}&sz=w100`;
-
       checkImg.onload = () => {
         driveStatus.className = 'status-msg success';
         driveStatus.textContent = 'Файл знайдено, доступ відкритий';
       };
-
       checkImg.onerror = () => {
         driveStatus.className = 'status-msg error';
         driveStatus.textContent = 'Файл недоступний. Відкрийте «Загальний доступ для всіх за посиланням»';
@@ -361,7 +377,7 @@
     }
   });
 
-  // Отправка формы
+  // Отправка заявки
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -380,18 +396,17 @@
       await fetch(SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       alert('Заявку успішно надіслано!');
       form.reset();
+      hierarchyInfo.style.display = 'none';
       driveStatus.textContent = '';
       driveStatus.className = 'status-msg';
     } catch (err) {
-      alert('Сталася помилка при надсиланні заявки. Спробуйте ще раз.');
+      alert('Сталася помилка при надсиланні. Спробуйте ще раз.');
       console.error(err);
     } finally {
       submitBtn.disabled = false;
