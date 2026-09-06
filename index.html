@@ -249,7 +249,7 @@
       <input type="text" id="workTitle" name="workTitle" placeholder="Введіть авторську назву фотографії" required>
     </div>
 
-    <!-- Поле ссылки на Google Диск -->
+    <!-- Поле посилання на Google Диск -->
     <div class="form-group">
       <label for="driveUrl">Посилання на фотографію (Google Диск)</label>
       <div class="hint">Посилання на файл фотографії (папки та архіви ZIP заборонені)</div>
@@ -282,7 +282,6 @@
   const zpoInput = document.getElementById('zpoSchool');
   const zpoDropdown = document.getElementById('zpoDropdown');
 
-  // Автокомплит заведений
   function setupAutocomplete(input, dropdown, getItems) {
     function render() {
       const query = input.value.trim().toLowerCase();
@@ -324,7 +323,6 @@
     input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
   }
 
-  // Автокомплит КАТОТТГ
   function setupSettlementAutocomplete() {
     function render() {
       const query = settlementInput.value.trim().toLowerCase();
@@ -379,7 +377,6 @@
     settlementInput.addEventListener('blur', () => setTimeout(() => { settlementDropdown.style.display = 'none'; }, 200));
   }
 
-  // Загрузка списков
   window.addEventListener('DOMContentLoaded', async () => {
     try {
       const sRes = await fetch('./settlements.json');
@@ -392,7 +389,7 @@
     }
 
     try {
-      const res = await fetch(SCRIPT_URL, { redirect: 'follow' });
+      const res = await fetch(SCRIPT_URL);
       const data = await res.json();
       mainData = data.main || [];
       zpoData = data.zpo || [];
@@ -405,7 +402,6 @@
     }
   });
 
-  // Валидация Google Диска и проверка фото
   const driveInput = document.getElementById('driveUrl');
   const driveStatus = document.getElementById('driveStatus');
   const submitBtn = document.getElementById('submitBtn');
@@ -426,6 +422,7 @@
     return { id: null, error: 'Некоректний формат посилання на Google Диск.' };
   }
 
+  // Надежная валидация фото через POST-запрос
   driveInput.addEventListener('blur', async () => {
     const url = driveInput.value.trim();
     driveStatus.className = 'status-msg';
@@ -444,22 +441,28 @@
     driveStatus.className = 'status-msg pending';
     driveStatus.textContent = '⏳ Перевіряємо доступ та технічні вимоги (формат, розмір, роздільну здатність)...';
 
-    try {
-      const res = await fetch(`${SCRIPT_URL}?action=checkPhoto&fileId=${parsed.id}`, {
-        method: 'GET',
-        redirect: 'follow'
-      });
-      const check = await res.json();
+    const checkParams = new URLSearchParams({
+      action: 'checkPhoto',
+      fileId: parsed.id
+    });
 
-      const msg = (check && check.message) ? check.message : (check && check.error ? check.error : 'Невідома відповідь сервера');
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: checkParams.toString()
+      });
+
+      const check = await res.json();
 
       if (check && check.valid) {
         driveStatus.className = 'status-msg success';
-        driveStatus.textContent = '✅ ' + msg;
+        driveStatus.textContent = '✅ ' + check.message;
         isPhotoValidated = true;
       } else {
+        const errorText = (check && check.message) ? check.message : 'Файл не відповідає технічним вимогам конкурсу.';
         driveStatus.className = 'status-msg error';
-        driveStatus.textContent = '❌ ' + msg;
+        driveStatus.textContent = '❌ ' + errorText;
         isPhotoValidated = false;
       }
     } catch (err) {
@@ -492,9 +495,7 @@
     try {
       const response = await fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
         body: searchParams.toString(),
         signal: controller.signal
       });
