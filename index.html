@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Подача заявки на конкурс</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #cbd5e1;
+      --error: #ef4444;
+      --success: #16a34a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; display: flex; justify-content: center; }
+    
+    .container {
+      width: 100%;
+      max-width: 540px;
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    }
+
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
+    
+    .form-group { margin-bottom: 1.25rem; display: flex; flex-direction: column; }
+    label { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.4rem; }
+    
+    input, select {
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus { border-color: var(--primary); }
+    
+    .status-msg {
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      min-height: 1.2rem;
+    }
+    .status-msg.error { color: var(--error); }
+    .status-msg.success { color: var(--success); }
+
+    button {
+      width: 100%;
+      padding: 0.85rem;
+      background-color: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s;
+    }
+
+    button:hover { background-color: var(--primary-hover); }
+    button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Подача заявки</h1>
+  <form id="contestForm">
+    <div class="form-group">
+      <label for="fullName">ФИО участника</label>
+      <input type="text" id="fullName" name="fullName" placeholder="Иванов Иван Иванович" required>
+    </div>
+
+    <div class="form-group">
+      <label for="birthDate">Дата рождения</label>
+      <input type="date" id="birthDate" name="birthDate" required>
+    </div>
+
+    <div class="form-group">
+      <label for="category">Номинация</label>
+      <select id="category" name="category" required>
+        <option value="" disabled selected>Выберите номинацию...</option>
+        <option value="Номинация 1">Номинация 1</option>
+        <option value="Номинация 2">Номинация 2</option>
+        <option value="Номинация 3">Номинация 3</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="workTitle">Название работы</label>
+      <input type="text" id="workTitle" name="workTitle" placeholder="Введите название проекта" required>
+    </div>
+
+    <div class="form-group">
+      <label for="driveUrl">Ссылка на работу (Google Drive)</label>
+      <input type="url" id="driveUrl" name="driveUrl" placeholder="https://drive.google.com/..." required>
+      <span class="status-msg" id="driveStatus"></span>
+    </div>
+
+    <button type="submit" id="submitBtn">Отправить заявку</button>
+  </form>
+</div>
+
+<script>
+  const driveInput = document.getElementById('driveUrl');
+  const driveStatus = document.getElementById('driveStatus');
+  const submitBtn = document.getElementById('submitBtn');
+  const form = document.getElementById('contestForm');
+
+  // Извлечение ID файла или папки из любого типа ссылки Google Drive
+  function extractDriveId(url) {
+    const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileMatch) return { id: fileMatch[1], type: 'file' };
+
+    const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    if (folderMatch) return { id: folderMatch[1], type: 'folder' };
+
+    const openMatch = url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (openMatch) return { id: openMatch[1], type: 'file' };
+
+    return null;
+  }
+
+  // Валидация ссылки и проверка открытости файла
+  driveInput.addEventListener('blur', async () => {
+    const url = driveInput.value.trim();
+    driveStatus.className = 'status-msg';
+    driveStatus.textContent = '';
+
+    if (!url) return;
+
+    const parsed = extractDriveId(url);
+
+    if (!parsed) {
+      driveStatus.className = 'status-msg error';
+      driveStatus.textContent = 'Некорректная ссылка на Google Диск';
+      return;
+    }
+
+    // Для файлов проверяем доступность через загрузку превью
+    if (parsed.type === 'file') {
+      driveStatus.textContent = 'Проверяем доступность файла...';
+      
+      const checkImg = new Image();
+      checkImg.src = `https://drive.google.com/thumbnail?id=${parsed.id}&sz=w100`;
+
+      checkImg.onload = () => {
+        driveStatus.className = 'status-msg success';
+        driveStatus.textContent = 'Файл найден, доступ открыт';
+      };
+
+      checkImg.onerror = () => {
+        driveStatus.className = 'status-msg error';
+        driveStatus.textContent = 'Файл недоступен. Откройте «Общий доступ для всех по ссылке»';
+      };
+    } else {
+      // Для папок Google не отдает публичный thumbnail, поэтому валидируем синтаксис
+      driveStatus.className = 'status-msg success';
+      driveStatus.textContent = 'Формат ссылки на папку верный (убедитесь, что доступ открыт)';
+    }
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    if (driveStatus.classList.contains('error')) {
+      alert('Пожалуйста, откройте доступ к файлу на Google Диске перед отправкой.');
+      return;
+    }
+
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+
+    console.log('Данные готовы к отправке:', payload);
+    alert('Форма заполнена корректно!');
+    // Сюда подключим отправку на сервер/таблицу
+  });
+</script>
+
+</body>
+</html>
