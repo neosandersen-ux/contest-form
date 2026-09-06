@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Подача заявки на конкурс</title>
+  <title>Подання заявки на конкурс</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -14,6 +14,7 @@
       --border: #cbd5e1;
       --error: #ef4444;
       --success: #16a34a;
+      --muted: #64748b;
     }
 
     * {
@@ -33,7 +34,7 @@
     
     .container {
       width: 100%;
-      max-width: 540px;
+      max-width: 600px;
       background: var(--card-bg);
       padding: 2.5rem;
       border-radius: 12px;
@@ -55,6 +56,12 @@
     label {
       font-size: 0.875rem;
       font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
       margin-bottom: 0.4rem;
     }
     
@@ -101,46 +108,114 @@
 <body>
 
 <div class="container">
-  <h1>Подача заявки</h1>
+  <h1>Подання заявки на конкурс</h1>
   <form id="contestForm">
     <div class="form-group">
-      <label for="fullName">ФИО участника</label>
-      <input type="text" id="fullName" name="fullName" placeholder="Иванов Иван Иванович" required>
+      <label for="fullName">ПІБ учасника</label>
+      <input type="text" id="fullName" name="fullName" placeholder="Шевченко Тарас Григорович" required>
     </div>
 
     <div class="form-group">
-      <label for="birthDate">Дата рождения</label>
+      <label for="birthDate">Дата народження</label>
       <input type="date" id="birthDate" name="birthDate" required>
     </div>
 
+    <!-- Список 1: Основное заведение -->
     <div class="form-group">
-      <label for="category">Номинация</label>
+      <label for="mainSchool">Основний заклад освіти (школа, ліцей, ПТНЗ, ІРЦ)</label>
+      <div class="hint">Почніть вводити місто, селище або назву/номер закладу</div>
+      <input 
+        type="text" 
+        id="mainSchool" 
+        name="mainSchool" 
+        list="mainSchoolsList" 
+        placeholder="Завантаження списку закладів..." 
+        required
+      >
+      <datalist id="mainSchoolsList"></datalist>
+    </div>
+
+    <!-- Список 2: ЗПО -->
+    <div class="form-group">
+      <label for="zpoSchool">Заклад позашкільної освіти (ЗПО)</label>
+      <div class="hint">Заповнюється, якщо роботу підготовлено в гуртку чи клубі (необов'язково)</div>
+      <input 
+        type="text" 
+        id="zpoSchool" 
+        name="zpoSchool" 
+        list="zpoSchoolsList" 
+        placeholder="Оберіть зі списку або залиште порожнім..."
+      >
+      <datalist id="zpoSchoolsList"></datalist>
+    </div>
+
+    <div class="form-group">
+      <label for="category">Номінація</label>
       <select id="category" name="category" required>
-        <option value="" disabled selected>Выберите номинацию...</option>
-        <option value="Номинация 1">Номинация 1</option>
-        <option value="Номинация 2">Номинация 2</option>
-        <option value="Номинация 3">Номинация 3</option>
+        <option value="" disabled selected>Оберіть номінацію...</option>
+        <option value="Номінація 1">Номінація 1</option>
+        <option value="Номінація 2">Номінація 2</option>
+        <option value="Номінація 3">Номінація 3</option>
       </select>
     </div>
 
     <div class="form-group">
-      <label for="workTitle">Название работы</label>
-      <input type="text" id="workTitle" name="workTitle" placeholder="Введите название проекта" required>
+      <label for="workTitle">Назва роботи</label>
+      <input type="text" id="workTitle" name="workTitle" placeholder="Введіть назву проекту" required>
     </div>
 
     <div class="form-group">
-      <label for="driveUrl">Ссылка на работу (Google Drive)</label>
+      <label for="driveUrl">Посилання на роботу (Google Диск)</label>
       <input type="url" id="driveUrl" name="driveUrl" placeholder="https://drive.google.com/..." required>
       <span class="status-msg" id="driveStatus"></span>
     </div>
 
-    <button type="submit" id="submitBtn">Отправить заявку</button>
+    <button type="submit" id="submitBtn">Надіслати заявку</button>
   </form>
 </div>
 
 <script>
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_k7W0ad2WjI1zolOdwYR943rrCZEfYpXQrVLefVodWfSwZXrTVf2X1lANVGLcvnUJ/exec';
 
+  const mainInput = document.getElementById('mainSchool');
+  const zpoInput = document.getElementById('zpoSchool');
+  const mainList = document.getElementById('mainSchoolsList');
+  const zpoList = document.getElementById('zpoSchoolsList');
+
+  // Автоматическая подгрузка справочников из Google Таблицы
+  window.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch(SCRIPT_URL);
+      const data = await res.json();
+
+      if (data.main && Array.isArray(data.main)) {
+        const fragMain = document.createDocumentFragment();
+        data.main.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item;
+          fragMain.appendChild(opt);
+        });
+        mainList.appendChild(fragMain);
+      }
+
+      if (data.zpo && Array.isArray(data.zpo)) {
+        const fragZpo = document.createDocumentFragment();
+        data.zpo.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item;
+          fragZpo.appendChild(opt);
+        });
+        zpoList.appendChild(fragZpo);
+      }
+
+      mainInput.placeholder = "Оберіть зі списку або введіть свій варіант...";
+    } catch (e) {
+      console.warn('Не вдалося завантажити довідник закладів:', e);
+      mainInput.placeholder = "Введіть назву закладу вручну...";
+    }
+  });
+
+  // Валидация Google Drive
   const driveInput = document.getElementById('driveUrl');
   const driveStatus = document.getElementById('driveStatus');
   const submitBtn = document.getElementById('submitBtn');
@@ -170,41 +245,42 @@
 
     if (!parsed) {
       driveStatus.className = 'status-msg error';
-      driveStatus.textContent = 'Некорректная ссылка на Google Диск';
+      driveStatus.textContent = 'Некоректне посилання на Google Диск';
       return;
     }
 
     if (parsed.type === 'file') {
-      driveStatus.textContent = 'Проверяем доступность файла...';
+      driveStatus.textContent = 'Перевіряємо доступність файлу...';
       
       const checkImg = new Image();
       checkImg.src = `https://drive.google.com/thumbnail?id=${parsed.id}&sz=w100`;
 
       checkImg.onload = () => {
         driveStatus.className = 'status-msg success';
-        driveStatus.textContent = 'Файл найден, доступ открыт';
+        driveStatus.textContent = 'Файл знайдено, доступ відкритий';
       };
 
       checkImg.onerror = () => {
         driveStatus.className = 'status-msg error';
-        driveStatus.textContent = 'Файл недоступен. Откройте «Общий доступ для всех по ссылке»';
+        driveStatus.textContent = 'Файл недоступний. Відкрийте «Загальний доступ для всіх за посиланням»';
       };
     } else {
       driveStatus.className = 'status-msg success';
-      driveStatus.textContent = 'Формат ссылки на папку верный (убедитесь, что доступ открыт)';
+      driveStatus.textContent = 'Формат посилання вірний (переконайтеся, що доступ відкритий)';
     }
   });
 
+  // Обработка отправки формы
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     if (driveStatus.classList.contains('error')) {
-      alert('Пожалуйста, откройте доступ к файлу на Google Диске перед отправкой.');
+      alert('Будь ласка, відкрийте доступ до файлу на Google Диску перед надсиланням.');
       return;
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Отправка...';
+    submitBtn.textContent = 'Надсилання...';
 
     const formData = new FormData(form);
     const payload = Object.fromEntries(formData.entries());
@@ -219,16 +295,16 @@
         body: JSON.stringify(payload)
       });
 
-      alert('Заявка успешно отправлена!');
+      alert('Заявку успішно надіслано!');
       form.reset();
       driveStatus.textContent = '';
       driveStatus.className = 'status-msg';
     } catch (err) {
-      alert('Произошла ошибка при отправке заявки. Попробуйте еще раз.');
+      alert('Сталася помилка при надсиланні заявки. Спробуйте ще раз.');
       console.error(err);
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Отправить заявку';
+      submitBtn.textContent = 'Надіслати заявку';
     }
   });
 </script>
