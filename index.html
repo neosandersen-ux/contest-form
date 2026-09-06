@@ -17,8 +17,20 @@
       --muted: #64748b;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; display: flex; justify-content: center; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 2.5rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
     
     .container {
       width: 100%;
@@ -29,7 +41,12 @@
       box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
     }
 
-    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1.75rem;
+      text-align: center;
+      color: var(--text);
+    }
     
     .form-group {
       margin-bottom: 1.25rem;
@@ -38,8 +55,17 @@
       position: relative;
     }
 
-    label { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.3rem; }
-    .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
+    label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
     
     input, select {
       padding: 0.75rem;
@@ -51,7 +77,9 @@
       width: 100%;
     }
 
-    input:focus, select:focus { border-color: var(--primary); }
+    input:focus, select:focus {
+      border-color: var(--primary);
+    }
 
     .hierarchy-badge {
       font-size: 0.8rem;
@@ -59,7 +87,7 @@
       border-left: 3px solid var(--primary);
       padding: 0.5rem 0.75rem;
       border-radius: 4px;
-      margin-top: 0.4rem;
+      margin-top: 0.45rem;
       color: #334155;
       display: none;
       line-height: 1.4;
@@ -89,11 +117,27 @@
       border-bottom: 1px solid #f1f5f9;
     }
 
-    .autocomplete-item:last-child { border-bottom: none; }
-    .autocomplete-item:hover { background-color: #eff6ff; color: var(--primary); }
-    .autocomplete-item mark { background: #fef08a; padding: 0 2px; border-radius: 2px; }
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+
+    .autocomplete-item:hover {
+      background-color: #eff6ff;
+      color: var(--primary);
+    }
+
+    .autocomplete-item mark {
+      background: #fef08a;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
     
-    .status-msg { font-size: 0.8rem; margin-top: 0.4rem; min-height: 1.2rem; }
+    .status-msg {
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      min-height: 1.2rem;
+    }
+
     .status-msg.error { color: var(--error); }
     .status-msg.success { color: var(--success); }
 
@@ -107,7 +151,7 @@
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 0.5rem;
+      margin-top: 0.75rem;
       transition: background 0.2s;
     }
 
@@ -130,10 +174,10 @@
       <input type="date" id="birthDate" name="birthDate" required>
     </div>
 
-    <!-- Поле: Населенный пункт -->
+    <!-- 1. Населенный пункт (КАТОТТГ) -->
     <div class="form-group">
       <label for="settlementInput">Населений пункт</label>
-      <div class="hint">Введіть назву міста, селища чи села (наприклад: Дніпро, Слобожанське, Вербки)</div>
+      <div class="hint">Введіть назву міста, селища чи села (наприклад: Дніпро, Вербки, Слобожанське)</div>
       <input 
         type="text" 
         id="settlementInput" 
@@ -143,25 +187,25 @@
       <div class="autocomplete-dropdown" id="settlementDropdown"></div>
       <div class="hierarchy-badge" id="hierarchyInfo"></div>
 
-      <!-- Скрытые поля для передачи в Google Таблицу -->
+      <!-- Скрытые параметры для записи в таблицу -->
       <input type="hidden" id="district" name="district">
       <input type="hidden" id="hromada" name="hromada">
       <input type="hidden" id="settlementCategory" name="settlementCategory">
       <input type="hidden" id="settlementName" name="settlementName">
     </div>
 
-    <!-- Поле: Основное заведение -->
+    <!-- 2. Основное учреждение образования -->
     <div class="form-group">
       <label for="mainSchool">Основний заклад освіти (школа, ліцей, ПТНЗ, ІРЦ)</label>
-      <div class="hint">Введіть будь-яке слово з назви або номер</div>
-      <input type="text" id="mainSchool" name="mainSchool" placeholder="Почніть вводити назву..." required>
+      <div class="hint">Введіть будь-яке слово з назви закладу або його номер</div>
+      <input type="text" id="mainSchool" name="mainSchool" placeholder="Завантаження списку закладів..." required>
       <div class="autocomplete-dropdown" id="mainDropdown"></div>
     </div>
 
-    <!-- Поле: ЗПО -->
+    <!-- 3. Внешкольное учреждение (ЗПО) -->
     <div class="form-group">
       <label for="zpoSchool">Заклад позашкільної освіти (ЗПО)</label>
-      <div class="hint">Заповнюється, якщо роботу виконано в гуртку/секції (необов'язково)</div>
+      <div class="hint">Заповнюється, якщо роботу виконано в гуртку / секції (необов'язково)</div>
       <input type="text" id="zpoSchool" name="zpoSchool" placeholder="Оберіть зі списку або залиште порожнім...">
       <div class="autocomplete-dropdown" id="zpoDropdown"></div>
     </div>
@@ -254,7 +298,7 @@
     input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
   }
 
-  // Поиск населенных пунктов с иерархией КАТОТТГ
+  // Поиск населенных пунктов с подстановкой иерархии
   function setupSettlementAutocomplete() {
     function render() {
       const query = settlementInput.value.trim().toLowerCase();
@@ -292,37 +336,37 @@
           hierarchyInfo.innerHTML = `📍 <strong>${item.district}</strong> | <strong>${item.hromada}</strong>`;
           settlementDropdown.style.display = 'none';
         });
-        dropdownAppend(settlementDropdown, div);
+        settlementDropdown.appendChild(div);
       });
       settlementDropdown.style.display = 'block';
     }
-
-    function dropdownAppend(parent, el) { parent.appendChild(el); }
 
     settlementInput.addEventListener('input', () => {
       hierarchyInfo.style.display = 'none';
       districtField.value = '';
       hromadaField.value = '';
+      catField.value = '';
+      nameField.value = '';
       render();
     });
     settlementInput.addEventListener('focus', render);
     settlementInput.addEventListener('blur', () => setTimeout(() => { settlementDropdown.style.display = 'none'; }, 200));
   }
 
-  // Загрузка данных: локальный settlements.json + учреждения из скрипта
+  // Загрузка данных
   window.addEventListener('DOMContentLoaded', async () => {
-    // 1. Быстрая загрузка населенных пунктов КАТОТТГ
+    // 1. Загрузка населенных пунктов КАТОТТГ
     try {
       const sRes = await fetch('./settlements.json');
       settlementsData = await sRes.json();
       setupSettlementAutocomplete();
       settlementInput.placeholder = "Почніть вводити назву населеного пункту...";
     } catch (e) {
-      console.warn('settlements.json не найден:', e);
-      settlementInput.placeholder = "Введіть населений пункт вручну...";
+      console.warn('Файл settlements.json не знайдено:', e);
+      settlementInput.placeholder = "Введіть назву населеного пункту...";
     }
 
-    // 2. Загрузка учреждений из Apps Script
+    // 2. Загрузка учреждений образования через скрипт
     try {
       const res = await fetch(SCRIPT_URL);
       const data = await res.json();
@@ -330,8 +374,10 @@
       zpoData = data.zpo || [];
       setupAutocomplete(mainInput, mainDropdown, () => mainData);
       setupAutocomplete(zpoInput, zpoDropdown, () => zpoData);
+      mainInput.placeholder = "Почніть вводити назву закладу...";
     } catch (e) {
-      console.warn('Не удалось загрузить учреждения:', e);
+      console.warn('Не вдалося завантажити заклади освіти:', e);
+      mainInput.placeholder = "Введіть назву закладу...";
     }
   });
 
@@ -382,12 +428,12 @@
     }
   });
 
-  // Отправка заявки
+  // Отправка формы в Google Таблицу
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     if (driveStatus.classList.contains('error')) {
-      alert('Будь ласка, відкрийте доступ до файлу на Google Диску перед надсиланням.');
+      alert('Будь ласка, відкрийте доступ до файлу на Google Диску перед надсиланням заявки.');
       return;
     }
 
@@ -401,7 +447,7 @@
       await fetch(SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
 
