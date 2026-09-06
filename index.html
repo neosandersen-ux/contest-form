@@ -54,10 +54,11 @@
     input:focus, select:focus { border-color: var(--primary); }
 
     .hierarchy-badge {
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       background-color: #f1f5f9;
+      border-left: 3px solid var(--primary);
       padding: 0.5rem 0.75rem;
-      border-radius: 6px;
+      border-radius: 4px;
       margin-top: 0.4rem;
       color: #334155;
       display: none;
@@ -129,20 +130,20 @@
       <input type="date" id="birthDate" name="birthDate" required>
     </div>
 
-    <!-- Поле: Населенный пункт (КАТОТТГ) -->
+    <!-- Поле: Населенный пункт -->
     <div class="form-group">
       <label for="settlementInput">Населений пункт</label>
-      <div class="hint">Почніть вводити назву міста, селища чи села</div>
+      <div class="hint">Введіть назву міста, селища чи села (наприклад: Дніпро, Слобожанське, Вербки)</div>
       <input 
         type="text" 
         id="settlementInput" 
-        placeholder="Завантаження довідника населених пунктів..." 
+        placeholder="Почніть вводити назву населеного пункту..." 
         required
       >
       <div class="autocomplete-dropdown" id="settlementDropdown"></div>
       <div class="hierarchy-badge" id="hierarchyInfo"></div>
 
-      <!-- Скрытые поля для передачи полной иерархии -->
+      <!-- Скрытые поля для передачи в Google Таблицу -->
       <input type="hidden" id="district" name="district">
       <input type="hidden" id="hromada" name="hromada">
       <input type="hidden" id="settlementCategory" name="settlementCategory">
@@ -152,7 +153,7 @@
     <!-- Поле: Основное заведение -->
     <div class="form-group">
       <label for="mainSchool">Основний заклад освіти (школа, ліцей, ПТНЗ, ІРЦ)</label>
-      <div class="hint">Введіть будь-яке слово з назви або місто</div>
+      <div class="hint">Введіть будь-яке слово з назви або номер</div>
       <input type="text" id="mainSchool" name="mainSchool" placeholder="Почніть вводити назву..." required>
       <div class="autocomplete-dropdown" id="mainDropdown"></div>
     </div>
@@ -160,7 +161,7 @@
     <!-- Поле: ЗПО -->
     <div class="form-group">
       <label for="zpoSchool">Заклад позашкільної освіти (ЗПО)</label>
-      <div class="hint">Заповнюється, якщо роботу виконано в гуртку/клубі (необов'язково)</div>
+      <div class="hint">Заповнюється, якщо роботу виконано в гуртку/секції (необов'язково)</div>
       <input type="text" id="zpoSchool" name="zpoSchool" placeholder="Оберіть зі списку або залиште порожнім...">
       <div class="autocomplete-dropdown" id="zpoDropdown"></div>
     </div>
@@ -211,7 +212,7 @@
   const zpoInput = document.getElementById('zpoSchool');
   const zpoDropdown = document.getElementById('zpoDropdown');
 
-  // Поиск для текстовых массивов
+  // Полнотекстовый поиск для учреждений
   function setupAutocomplete(input, dropdown, getItems) {
     function render() {
       const query = input.value.trim().toLowerCase();
@@ -224,7 +225,7 @@
       const matches = items.filter(item => {
         const lower = item.toLowerCase();
         return words.every(w => lower.includes(w));
-      }).slice(0, 35);
+      }).slice(0, 30);
 
       if (!matches.length) { dropdown.style.display = 'none'; return; }
 
@@ -253,7 +254,7 @@
     input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
   }
 
-  // Специальный поиск для КАТОТТГ с привязкой иерархии
+  // Поиск населенных пунктов с иерархией КАТОТТГ
   function setupSettlementAutocomplete() {
     function render() {
       const query = settlementInput.value.trim().toLowerCase();
@@ -264,7 +265,7 @@
       const matches = settlementsData.filter(item => {
         const target = `${item.settlement} ${item.hromada} ${item.district}`.toLowerCase();
         return words.every(w => target.includes(w));
-      }).slice(0, 35);
+      }).slice(0, 30);
 
       if (!matches.length) { settlementDropdown.style.display = 'none'; return; }
 
@@ -288,13 +289,15 @@
           nameField.value = item.settlement;
 
           hierarchyInfo.style.display = 'block';
-          hierarchyInfo.innerHTML = `<strong>Район:</strong> ${item.district} | <strong>Громада:</strong> ${item.hromada}`;
+          hierarchyInfo.innerHTML = `📍 <strong>${item.district}</strong> | <strong>${item.hromada}</strong>`;
           settlementDropdown.style.display = 'none';
         });
-        settlementDropdown.appendChild(div);
+        dropdownAppend(settlementDropdown, div);
       });
       settlementDropdown.style.display = 'block';
     }
+
+    function dropdownAppend(parent, el) { parent.appendChild(el); }
 
     settlementInput.addEventListener('input', () => {
       hierarchyInfo.style.display = 'none';
@@ -306,31 +309,33 @@
     settlementInput.addEventListener('blur', () => setTimeout(() => { settlementDropdown.style.display = 'none'; }, 200));
   }
 
-  // Загрузка всех баз данных
+  // Загрузка данных: локальный settlements.json + учреждения из скрипта
   window.addEventListener('DOMContentLoaded', async () => {
+    // 1. Быстрая загрузка населенных пунктов КАТОТТГ
+    try {
+      const sRes = await fetch('./settlements.json');
+      settlementsData = await sRes.json();
+      setupSettlementAutocomplete();
+      settlementInput.placeholder = "Почніть вводити назву населеного пункту...";
+    } catch (e) {
+      console.warn('settlements.json не найден:', e);
+      settlementInput.placeholder = "Введіть населений пункт вручну...";
+    }
+
+    // 2. Загрузка учреждений из Apps Script
     try {
       const res = await fetch(SCRIPT_URL);
       const data = await res.json();
-
-      settlementsData = data.settlements || [];
       mainData = data.main || [];
       zpoData = data.zpo || [];
-
-      setupSettlementAutocomplete();
       setupAutocomplete(mainInput, mainDropdown, () => mainData);
       setupAutocomplete(zpoInput, zpoDropdown, () => zpoData);
-
-      settlementInput.placeholder = "Почніть вводити назву населеного пункту...";
-      mainInput.placeholder = "Почніть вводити назву закладу...";
-      zpoInput.placeholder = "Почніть вводити назву закладу...";
     } catch (e) {
-      console.warn('Помилка завантаження довідників:', e);
-      settlementInput.placeholder = "Введіть населений пункт...";
-      mainInput.placeholder = "Введіть назву закладу...";
+      console.warn('Не удалось загрузить учреждения:', e);
     }
   });
 
-  // Валидация ссылки Google Drive
+  // Валидация Google Drive
   const driveInput = document.getElementById('driveUrl');
   const driveStatus = document.getElementById('driveStatus');
   const submitBtn = document.getElementById('submitBtn');
