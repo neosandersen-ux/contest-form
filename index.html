@@ -174,7 +174,7 @@
       <input type="date" id="birthDate" name="birthDate" required>
     </div>
 
-    <!-- 1. Населенный пункт (КАТОТТГ) -->
+    <!-- 1. Населений пункт (КАТОТТГ) -->
     <div class="form-group">
       <label for="settlementInput">Населений пункт</label>
       <div class="hint">Введіть назву міста, селища чи села (наприклад: Дніпро, Вербки, Слобожанське)</div>
@@ -187,14 +187,14 @@
       <div class="autocomplete-dropdown" id="settlementDropdown"></div>
       <div class="hierarchy-badge" id="hierarchyInfo"></div>
 
-      <!-- Скрытые параметры для записи в таблицу -->
+      <!-- Скрытые параметры для таблицы -->
       <input type="hidden" id="district" name="district">
       <input type="hidden" id="hromada" name="hromada">
       <input type="hidden" id="settlementCategory" name="settlementCategory">
       <input type="hidden" id="settlementName" name="settlementName">
     </div>
 
-    <!-- 2. Основное учреждение образования -->
+    <!-- 2. Основний заклад освіти -->
     <div class="form-group">
       <label for="mainSchool">Основний заклад освіти (школа, ліцей, ПТНЗ, ІРЦ)</label>
       <div class="hint">Введіть будь-яке слово з назви закладу або його номер</div>
@@ -202,7 +202,7 @@
       <div class="autocomplete-dropdown" id="mainDropdown"></div>
     </div>
 
-    <!-- 3. Внешкольное учреждение (ЗПО) -->
+    <!-- 3. ЗПО -->
     <div class="form-group">
       <label for="zpoSchool">Заклад позашкільної освіти (ЗПО)</label>
       <div class="hint">Заповнюється, якщо роботу виконано в гуртку / секції (необов'язково)</div>
@@ -256,7 +256,7 @@
   const zpoInput = document.getElementById('zpoSchool');
   const zpoDropdown = document.getElementById('zpoDropdown');
 
-  // Полнотекстовый поиск для учреждений
+  // Поиск для учебных заведений
   function setupAutocomplete(input, dropdown, getItems) {
     function render() {
       const query = input.value.trim().toLowerCase();
@@ -298,7 +298,7 @@
     input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
   }
 
-  // Поиск населенных пунктов с подстановкой иерархии
+  // Поиск населенных пунктов КАТОТТГ
   function setupSettlementAutocomplete() {
     function render() {
       const query = settlementInput.value.trim().toLowerCase();
@@ -353,9 +353,9 @@
     settlementInput.addEventListener('blur', () => setTimeout(() => { settlementDropdown.style.display = 'none'; }, 200));
   }
 
-  // Загрузка данных
+  // Загрузка баз данных
   window.addEventListener('DOMContentLoaded', async () => {
-    // 1. Загрузка населенных пунктов КАТОТТГ
+    // 1. Загрузка settlements.json
     try {
       const sRes = await fetch('./settlements.json');
       settlementsData = await sRes.json();
@@ -366,7 +366,7 @@
       settlementInput.placeholder = "Введіть назву населеного пункту...";
     }
 
-    // 2. Загрузка учреждений образования через скрипт
+    // 2. Загрузка учреждений из Apps Script
     try {
       const res = await fetch(SCRIPT_URL);
       const data = await res.json();
@@ -381,7 +381,7 @@
     }
   });
 
-  // Валидация Google Drive
+  // Валидация ссылки Google Drive
   const driveInput = document.getElementById('driveUrl');
   const driveStatus = document.getElementById('driveStatus');
   const submitBtn = document.getElementById('submitBtn');
@@ -428,7 +428,7 @@
     }
   });
 
-  // Отправка формы в Google Таблицу
+  // Отправка с чтением подтверждения от сервера
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -438,27 +438,46 @@
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Надсилання...';
+    submitBtn.textContent = 'Збереження в базі даних...';
 
     const formData = new FormData(form);
-    const payload = Object.fromEntries(formData.entries());
+    const searchParams = new URLSearchParams(formData);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-      await fetch(SCRIPT_URL, {
+      const response = await fetch(SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
+        body: searchParams.toString(),
+        signal: controller.signal
       });
 
-      alert('Заявку успішно надіслано!');
-      form.reset();
-      hierarchyInfo.style.display = 'none';
-      driveStatus.textContent = '';
-      driveStatus.className = 'status-msg';
+      clearTimeout(timeoutId);
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        alert(`✅ Заявку успішно збережено в базі під номером #${result.row - 1}!`);
+        form.reset();
+        hierarchyInfo.style.display = 'none';
+        driveStatus.textContent = '';
+        driveStatus.className = 'status-msg';
+      } else {
+        throw new Error(result.message || 'Помилка на боці сервера');
+      }
+
     } catch (err) {
-      alert('Сталася помилка при надсиланні. Спробуйте ще раз.');
-      console.error(err);
+      clearTimeout(timeoutId);
+      console.error('Помилка відправки:', err);
+      
+      if (err.name === 'AbortError') {
+        alert('❌ Час очікування вичерпано. Перевірте інтернет-з\'єднання та спробуйте ще раз.');
+      } else {
+        alert(`❌ Помилка запису: ${err.message || 'Не вдалося зв\'язатися з базою даних'}`);
+      }
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Надіслати заявку';
