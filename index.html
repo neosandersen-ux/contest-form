@@ -249,7 +249,7 @@
       <input type="text" id="workTitle" name="workTitle" placeholder="Введіть авторську назву фотографії" required>
     </div>
 
-    <!-- Поле посилання на Google Диск -->
+    <!-- Поле ссылки на Google Диск -->
     <div class="form-group">
       <label for="driveUrl">Посилання на фотографію (Google Диск)</label>
       <div class="hint">Посилання на файл фотографії (папки та архіви ZIP заборонені)</div>
@@ -282,7 +282,7 @@
   const zpoInput = document.getElementById('zpoSchool');
   const zpoDropdown = document.getElementById('zpoDropdown');
 
-  // Поиск учреждений
+  // Автокомплит заведений
   function setupAutocomplete(input, dropdown, getItems) {
     function render() {
       const query = input.value.trim().toLowerCase();
@@ -324,7 +324,7 @@
     input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
   }
 
-  // Поиск по КАТОТТГ
+  // Автокомплит КАТОТТГ
   function setupSettlementAutocomplete() {
     function render() {
       const query = settlementInput.value.trim().toLowerCase();
@@ -392,7 +392,7 @@
     }
 
     try {
-      const res = await fetch(SCRIPT_URL);
+      const res = await fetch(SCRIPT_URL, { redirect: 'follow' });
       const data = await res.json();
       mainData = data.main || [];
       zpoData = data.zpo || [];
@@ -445,12 +445,15 @@
     driveStatus.textContent = '⏳ Перевіряємо доступ та технічні вимоги (формат, розмір, роздільну здатність)...';
 
     try {
-      const res = await fetch(`${SCRIPT_URL}?action=checkPhoto&fileId=${parsed.id}`);
+      const res = await fetch(`${SCRIPT_URL}?action=checkPhoto&fileId=${parsed.id}`, {
+        method: 'GET',
+        redirect: 'follow'
+      });
       const check = await res.json();
 
-      const msg = check.message || check.error || (check.valid ? 'Файл відповідає вимогам' : 'Файл не пройшов перевірку');
+      const msg = (check && check.message) ? check.message : (check && check.error ? check.error : 'Невідома відповідь сервера');
 
-      if (check.valid) {
+      if (check && check.valid) {
         driveStatus.className = 'status-msg success';
         driveStatus.textContent = '✅ ' + msg;
         isPhotoValidated = true;
@@ -462,7 +465,7 @@
     } catch (err) {
       console.error('Помилка валідації:', err);
       driveStatus.className = 'status-msg error';
-      driveStatus.textContent = '❌ Не вдалося з\'єднатися із сервером перевірки. Перевірте відкритий доступ до файлу.';
+      driveStatus.textContent = '❌ Не вдалося зв\'язатися з сервером перевірки. Перевірте відкритий доступ до файлу.';
       isPhotoValidated = false;
     }
   });
