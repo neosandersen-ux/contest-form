@@ -249,7 +249,7 @@
       <input type="text" id="workTitle" name="workTitle" placeholder="Введіть авторську назву фотографії" required>
     </div>
 
-    <!-- Поле посилання на Google Диск -->
+    <!-- Поле ссылки на Google Диск -->
     <div class="form-group">
       <label for="driveUrl">Посилання на фотографію (Google Диск)</label>
       <div class="hint">Посилання на файл фотографії (папки та архіви ZIP заборонені)</div>
@@ -408,6 +408,7 @@
   const form = document.getElementById('contestForm');
 
   let isPhotoValidated = false;
+  let checkAbortController = null;
 
   function extractDriveId(url) {
     if (url.includes('/folders/')) {
@@ -422,7 +423,7 @@
     return { id: null, error: 'Некоректний формат посилання на Google Диск.' };
   }
 
-  // Проверка параметров фото через POST с детальной диагностикой
+  // Проверка параметров фото с отменой дублирующихся запросов
   driveInput.addEventListener('blur', async () => {
     const url = driveInput.value.trim();
     driveStatus.className = 'status-msg';
@@ -438,6 +439,11 @@
       return;
     }
 
+    if (checkAbortController) {
+      checkAbortController.abort();
+    }
+    checkAbortController = new AbortController();
+
     driveStatus.className = 'status-msg pending';
     driveStatus.textContent = '⏳ Перевіряємо доступ та технічні вимоги (формат, розмір, роздільну здатність)...';
 
@@ -450,12 +456,11 @@
       const res = await fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-        body: checkParams.toString()
+        body: checkParams.toString(),
+        signal: checkAbortController.signal
       });
 
       const rawText = await res.text();
-      console.log('Відповідь сервера:', rawText);
-
       let check;
       try {
         check = JSON.parse(rawText);
@@ -464,6 +469,8 @@
         driveStatus.textContent = '❌ Помилка: сервер повернув не JSON: ' + rawText.substring(0, 100);
         return;
       }
+
+      driveStatus.textContent = '';
 
       if (check && check.valid) {
         driveStatus.className = 'status-msg success';
@@ -476,6 +483,7 @@
         isPhotoValidated = false;
       }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error('Помилка валідації:', err);
       driveStatus.className = 'status-msg error';
       driveStatus.textContent = '❌ Не вдалося з\'єднатися із сервером: ' + err.message;
@@ -483,7 +491,7 @@
     }
   });
 
-  // Отправка заявки в Google Таблицу
+  // Отправка заявки с обратной верификацией сохранения в таблице
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -494,13 +502,13 @@
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Збереження в базі даних...';
+    submitBtn.textContent = 'Збереження та верифікація в базі...';
 
     const formData = new FormData(form);
     const searchParams = new URLSearchParams(formData);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     try {
       const response = await fetch(SCRIPT_URL, {
@@ -513,27 +521,42 @@
       });
 
       clearTimeout(timeoutId);
-      const result = await response.json();
 
-      if (result.status === 'success') {
-        alert(`✅ Заявку успішно зареєстровано під номером #${result.row - 1}!`);
+      const rawText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(rawText);
+      } catch (err) {
+        throw new Error('Сервер повернув некоректну відповідь: ' + rawText.substring(0, 100));
+      }
+
+      if (result.status === 'success' && result.verified) {
+        alert(
+          `🎉 ЗАЯВКУ УСПІШНО ПРИЙНЯТО ТА ВНЕСЕНО ДО БАЗИ!\n\n` +
+          `• Реєстраційний номер: ${result.regNumber}\n` +
+          `• Учасник: ${result.fullName}\n` +
+          `• Робота: «${result.workTitle}»\n` +
+          `• Час фіксації: ${result.timestamp}\n\n` +
+          `Збережіть ваш реєстраційний номер для відстеження результатів.`
+        );
+
         form.reset();
         hierarchyInfo.style.display = 'none';
         driveStatus.textContent = '';
         driveStatus.className = 'status-msg';
         isPhotoValidated = false;
       } else {
-        throw new Error(result.message || 'Помилка на боці сервера');
+        throw new Error(result.message || 'Запис не підтверджено базою даних');
       }
 
     } catch (err) {
       clearTimeout(timeoutId);
-      console.error('Помилка відправки:', err);
+      console.error('Помилка реєстрації:', err);
       
       if (err.name === 'AbortError') {
         alert('❌ Час очікування вичерпано. Перевірте з\'єднання та спробуйте ще раз.');
       } else {
-        alert(`❌ Помилка запису: ${err.message || 'Не вдалося зв\'язатися з базою даних'}`);
+        alert(`❌ ЗАЯВКУ НЕ ЗБЕРЕЖЕНО!\nПричина: ${err.message}`);
       }
     } finally {
       submitBtn.disabled = false;
