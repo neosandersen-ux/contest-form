@@ -183,7 +183,7 @@
   <h1>Подання заявки на фотоконкурс</h1>
 
   <div class="requirements-box">
-    <strong>Вимоги до фотофайлу:</strong> оригінальний формат <strong>JPEG/JPG</strong> (без ZIP/RAR), розмір від <strong>2 до 20 МБ</strong>, роздільна здатність від <strong>2400 px</strong> (рекомендовано 3000–4000 px) по довгій стороні. Зображення без рамок, водяних знаків та підписів.
+    <strong>Технічні вимоги до фото:</strong> оригінальний формат <strong>JPEG/JPG</strong> (без архівів ZIP/RAR), розмір від <strong>2 до 20 МБ</strong>, роздільна здатність від <strong>2400 px</strong> (рекомендовано 3000–4000 px) по довгій стороні. Кадр без рамок, водяних знаків та підписів.
   </div>
 
   <form id="contestForm" autocomplete="off">
@@ -249,10 +249,10 @@
       <input type="text" id="workTitle" name="workTitle" placeholder="Введіть авторську назву фотографії" required>
     </div>
 
-    <!-- Поле ссылки на Google Диск с проверкой техтребований -->
+    <!-- Поле посилання на Google Диск -->
     <div class="form-group">
       <label for="driveUrl">Посилання на фотографію (Google Диск)</label>
-      <div class="hint">Посилання на конкретний файл зображення (папки та архіви ZIP не приймаються)</div>
+      <div class="hint">Посилання на файл фотографії (папки та архіви ZIP заборонені)</div>
       <input type="url" id="driveUrl" name="driveUrl" placeholder="https://drive.google.com/file/d/..." required>
       <span class="status-msg" id="driveStatus"></span>
     </div>
@@ -282,7 +282,7 @@
   const zpoInput = document.getElementById('zpoSchool');
   const zpoDropdown = document.getElementById('zpoDropdown');
 
-  // Поиск по учреждениям
+  // Поиск учреждений
   function setupAutocomplete(input, dropdown, getItems) {
     function render() {
       const query = input.value.trim().toLowerCase();
@@ -405,7 +405,7 @@
     }
   });
 
-  // Валидация Google Диска и проверка технических параметров фото
+  // Валидация Google Диска и проверка фото
   const driveInput = document.getElementById('driveUrl');
   const driveStatus = document.getElementById('driveStatus');
   const submitBtn = document.getElementById('submitBtn');
@@ -448,18 +448,22 @@
       const res = await fetch(`${SCRIPT_URL}?action=checkPhoto&fileId=${parsed.id}`);
       const check = await res.json();
 
+      const msg = check.message || check.error || (check.valid ? 'Файл відповідає вимогам' : 'Файл не пройшов перевірку');
+
       if (check.valid) {
         driveStatus.className = 'status-msg success';
-        driveStatus.textContent = '✅ ' + check.message;
+        driveStatus.textContent = '✅ ' + msg;
         isPhotoValidated = true;
       } else {
         driveStatus.className = 'status-msg error';
-        driveStatus.textContent = '❌ ' + check.message;
+        driveStatus.textContent = '❌ ' + msg;
         isPhotoValidated = false;
       }
     } catch (err) {
+      console.error('Помилка валідації:', err);
       driveStatus.className = 'status-msg error';
-      driveStatus.textContent = '⚠️ Не вдалося зв\'язатися з сервером перевірки. Переконайтеся, що доступ відкритий.';
+      driveStatus.textContent = '❌ Не вдалося з\'єднатися із сервером перевірки. Перевірте відкритий доступ до файлу.';
+      isPhotoValidated = false;
     }
   });
 
