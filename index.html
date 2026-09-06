@@ -51,6 +51,7 @@
       margin-bottom: 1.25rem;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     label {
@@ -72,10 +73,53 @@
       font-size: 0.95rem;
       outline: none;
       transition: border-color 0.2s;
+      width: 100%;
     }
 
     input:focus, select:focus {
       border-color: var(--primary);
+    }
+
+    /* Кастомное выпадающее меню с поиском по любым словам */
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      display: none;
+      margin-top: 4px;
+    }
+
+    .autocomplete-item {
+      padding: 0.7rem 0.9rem;
+      font-size: 0.88rem;
+      line-height: 1.35;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.15s;
+    }
+
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+
+    .autocomplete-item:hover, .autocomplete-item.active {
+      background-color: #eff6ff;
+      color: var(--primary);
+    }
+
+    .autocomplete-item mark {
+      background: #fef08a;
+      color: inherit;
+      padding: 0 2px;
+      border-radius: 2px;
     }
     
     .status-msg {
@@ -109,7 +153,7 @@
 
 <div class="container">
   <h1>Подання заявки на конкурс</h1>
-  <form id="contestForm">
+  <form id="contestForm" autocomplete="off">
     <div class="form-group">
       <label for="fullName">ПІБ учасника</label>
       <input type="text" id="fullName" name="fullName" placeholder="Шевченко Тарас Григорович" required>
@@ -120,33 +164,31 @@
       <input type="date" id="birthDate" name="birthDate" required>
     </div>
 
-    <!-- Список 1: Основное заведение -->
+    <!-- Поле 1: Основное заведение -->
     <div class="form-group">
       <label for="mainSchool">Основний заклад освіти (школа, ліцей, ПТНЗ, ІРЦ)</label>
-      <div class="hint">Почніть вводити місто, селище або назву/номер закладу</div>
+      <div class="hint">Введіть будь-яке слово з назви або місто</div>
       <input 
         type="text" 
         id="mainSchool" 
         name="mainSchool" 
-        list="mainSchoolsList" 
         placeholder="Завантаження списку закладів..." 
         required
       >
-      <datalist id="mainSchoolsList"></datalist>
+      <div class="autocomplete-dropdown" id="mainDropdown"></div>
     </div>
 
-    <!-- Список 2: ЗПО -->
+    <!-- Поле 2: Внешкольное заведение (ЗПО) -->
     <div class="form-group">
       <label for="zpoSchool">Заклад позашкільної освіти (ЗПО)</label>
-      <div class="hint">Заповнюється, якщо роботу підготовлено в гуртку чи клубі (необов'язково)</div>
+      <div class="hint">Введіть будь-яке слово з назви (наприклад: учнів, творчості, доцнттум)</div>
       <input 
         type="text" 
         id="zpoSchool" 
         name="zpoSchool" 
-        list="zpoSchoolsList" 
         placeholder="Оберіть зі списку або залиште порожнім..."
       >
-      <datalist id="zpoSchoolsList"></datalist>
+      <div class="autocomplete-dropdown" id="zpoDropdown"></div>
     </div>
 
     <div class="form-group">
@@ -177,41 +219,90 @@
 <script>
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_k7W0ad2WjI1zolOdwYR943rrCZEfYpXQrVLefVodWfSwZXrTVf2X1lANVGLcvnUJ/exec';
 
-  const mainInput = document.getElementById('mainSchool');
-  const zpoInput = document.getElementById('zpoSchool');
-  const mainList = document.getElementById('mainSchoolsList');
-  const zpoList = document.getElementById('zpoSchoolsList');
+  let mainData = [];
+  let zpoData = [];
 
-  // Автоматическая подгрузка справочников из Google Таблицы
+  const mainInput = document.getElementById('mainSchool');
+  const mainDropdown = document.getElementById('mainDropdown');
+
+  const zpoInput = document.getElementById('zpoSchool');
+  const zpoDropdown = document.getElementById('zpoDropdown');
+
+  // Универсальный умный поиск по любым подстрокам и словам
+  function setupAutocomplete(input, dropdown, getItems) {
+    function filterAndRender() {
+      const query = input.value.trim().toLowerCase();
+      dropdown.innerHTML = '';
+
+      if (!query) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      // Разбиваем введенный текст на отдельные слова для поиска
+      const queryWords = query.split(/\s+/).filter(Boolean);
+      const items = getItems();
+
+      // Находим все записи, содержащие ВСЕ введенные слова в любой части названия
+      const matches = items.filter(item => {
+        const itemLower = item.toLowerCase();
+        return queryWords.every(word => itemLower.includes(word));
+      }).slice(0, 35); // выводим до 35 совпадений
+
+      if (matches.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      matches.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+
+        // Подсвечиваем найденные слова
+        let highlighted = item;
+        queryWords.forEach(word => {
+          const regex = new RegExp(`(${word})`, 'gi');
+          highlighted = highlighted.replace(regex, '<mark>$1</mark>');
+        });
+
+        div.innerHTML = highlighted;
+        div.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          input.value = item;
+          dropdown.style.display = 'none';
+        });
+        dropdown.appendChild(div);
+      });
+
+      dropdown.style.display = 'block';
+    }
+
+    input.addEventListener('input', filterAndRender);
+    input.addEventListener('focus', filterAndRender);
+    input.addEventListener('blur', () => {
+      // Прячем меню при потере фокуса
+      setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+    });
+  }
+
+  // Загрузка списков заведений
   window.addEventListener('DOMContentLoaded', async () => {
     try {
       const res = await fetch(SCRIPT_URL);
       const data = await res.json();
 
-      if (data.main && Array.isArray(data.main)) {
-        const fragMain = document.createDocumentFragment();
-        data.main.forEach(item => {
-          const opt = document.createElement('option');
-          opt.value = item;
-          fragMain.appendChild(opt);
-        });
-        mainList.appendChild(fragMain);
-      }
+      mainData = data.main || [];
+      zpoData = data.zpo || [];
 
-      if (data.zpo && Array.isArray(data.zpo)) {
-        const fragZpo = document.createDocumentFragment();
-        data.zpo.forEach(item => {
-          const opt = document.createElement('option');
-          opt.value = item;
-          fragZpo.appendChild(opt);
-        });
-        zpoList.appendChild(fragZpo);
-      }
+      setupAutocomplete(mainInput, mainDropdown, () => mainData);
+      setupAutocomplete(zpoInput, zpoDropdown, () => zpoData);
 
-      mainInput.placeholder = "Оберіть зі списку або введіть свій варіант...";
+      mainInput.placeholder = "Почніть вводити назву закладу...";
+      zpoInput.placeholder = "Почніть вводити назву закладу...";
     } catch (e) {
       console.warn('Не вдалося завантажити довідник закладів:', e);
-      mainInput.placeholder = "Введіть назву закладу вручну...";
+      mainInput.placeholder = "Введіть назву закладу...";
+      zpoInput.placeholder = "Введіть назву закладу...";
     }
   });
 
@@ -270,7 +361,7 @@
     }
   });
 
-  // Обработка отправки формы
+  // Отправка формы
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
