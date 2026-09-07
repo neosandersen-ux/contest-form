@@ -14,26 +14,36 @@
       --accent: #3b82f6;
       --accent-hover: #2563eb;
       --success: #10b981;
+      --success-dark: #059669;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
     
-    header { height: 60px; background: var(--panel); border-bottom: 1px solid var(--panel-border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
-    .nav-btn { background: #334155; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    /* Шапка */
+    header { height: 68px; background: var(--panel); border-bottom: 1px solid var(--panel-border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: relative; z-index: 50; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .nav-btn { background: #334155; color: #fff; border: 1px solid var(--panel-border); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s; }
     .nav-btn:hover { background: #475569; }
 
-    .workspace { display: flex; flex: 1; height: calc(100vh - 60px); }
+    /* Навигатор и прогресс в шапке */
+    .progress-box { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin: 0 10px; }
+    .select-dropdown { background: #0f172a; color: var(--text); border: 1px solid var(--panel-border); border-radius: 6px; padding: 6px 10px; font-size: 13px; font-weight: 600; cursor: pointer; outline: none; }
+    .progress-bar-wrap { width: 140px; height: 6px; background: #334155; border-radius: 3px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; width: 0%; background: var(--success); transition: width 0.3s ease; }
+
+    .workspace { display: flex; flex: 1; height: calc(100vh - 68px); }
     
     /* Левая зона: Фото */
     .media-stage { flex: 7; display: flex; flex-direction: column; background: #020617; position: relative; }
-    .work-tabs { display: flex; gap: 8px; padding: 12px 16px; background: rgba(15, 23, 42, 0.8); z-index: 10; border-bottom: 1px solid var(--panel-border); }
-    .tab-btn { background: #1e293b; border: 1px solid var(--panel-border); color: #cbd5e1; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .work-tabs { display: flex; gap: 8px; padding: 12px 16px; background: rgba(15, 23, 42, 0.9); z-index: 10; border-bottom: 1px solid var(--panel-border); }
+    .tab-btn { background: #1e293b; border: 1px solid var(--panel-border); color: #cbd5e1; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 6px; }
     .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .tab-btn.evaluated { border-color: rgba(16, 185, 129, 0.5); }
+    .tab-badge { font-size: 11px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.25); }
 
     .image-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; overflow: hidden; position: relative; }
     .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: zoom-in; }
-    
-    .open-link-btn { margin-left: 12px; font-size: 13px; color: var(--accent); text-decoration: none; }
+    .open-link-btn { font-size: 13px; color: var(--accent); text-decoration: none; }
     .open-link-btn:hover { text-decoration: underline; }
 
     /* Правая зона: Оценивание */
@@ -51,8 +61,11 @@
     .total-card { background: #0f172a; padding: 16px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border: 1px solid var(--panel-border); }
     .total-score { font-size: 28px; font-weight: 700; color: var(--success); }
 
-    .submit-btn { width: 100%; background: var(--success); color: white; border: none; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 16px; transition: background 0.2s; }
-    .submit-btn:hover { background: #059669; }
+    /* Кнопка отправки со статусами */
+    .submit-btn { width: 100%; background: var(--accent); color: white; border: none; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 16px; transition: all 0.25s ease; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .submit-btn:hover { background: var(--accent-hover); }
+    .submit-btn.saving { background: #d97706; cursor: wait; }
+    .submit-btn.saved { background: var(--success); transform: scale(1.01); }
     
     #fsModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; align-items: center; justify-content: center; cursor: zoom-out; }
     #fsModal img { max-width: 95vw; max-height: 95vh; object-fit: contain; }
@@ -61,14 +74,24 @@
 <body>
 
   <header>
-    <div>
-      <span style="font-weight: 700; font-size: 16px;" id="participantTitle">Завантаження даних...</span>
-      <a id="externalLink" href="#" target="_blank" class="open-link-btn" style="display:none;">Відкрити оригінал на Drive ↗</a>
+    <div class="header-left">
+      <span style="font-weight: 700; font-size: 16px;" id="participantTitle">Завантаження...</span>
+      <a id="externalLink" href="#" target="_blank" class="open-link-btn" style="display:none;">Оригінал на Drive ↗</a>
     </div>
-    <div>
-      <button class="nav-btn" onclick="prevParticipant()">← Назад</button>
-      <span id="counter" style="margin: 0 12px; font-weight: 600; color: var(--text-muted);">0 / 0</span>
-      <button class="nav-btn" onclick="nextParticipant()">Вперед →</button>
+
+    <div style="display: flex; align-items: center;">
+      <button class="nav-btn" onclick="prevParticipant()">← Попередній</button>
+      
+      <div class="progress-box">
+        <select id="jumpSelect" class="select-dropdown" onchange="onSelectParticipant(this.value)">
+          <option value="0">Завантаження списку...</option>
+        </select>
+        <div class="progress-bar-wrap" title="Загальний прогрес оцінювання">
+          <div id="progressBar" class="progress-bar-fill"></div>
+        </div>
+      </div>
+
+      <button class="nav-btn" onclick="nextParticipant()">Наступний →</button>
     </div>
   </header>
 
@@ -82,7 +105,6 @@
 
     <div class="scoring-panel">
       <div>
-        <!-- Точність (10) -->
         <div class="criteria-group">
           <div class="criteria-title">
             <span>Точність</span>
@@ -91,7 +113,6 @@
           <div class="pill-group" id="groupAccuracy"></div>
         </div>
 
-        <!-- Креативність (5) -->
         <div class="criteria-group">
           <div class="criteria-title">
             <span>Креативність</span>
@@ -100,7 +121,6 @@
           <div class="pill-group" id="groupCreativity"></div>
         </div>
 
-        <!-- Художність (5) -->
         <div class="criteria-group">
           <div class="criteria-title">
             <span>Художність</span>
@@ -109,7 +129,6 @@
           <div class="pill-group" id="groupArtistry"></div>
         </div>
 
-        <!-- Технічність (5) -->
         <div class="criteria-group">
           <div class="criteria-title">
             <span>Технічність</span>
@@ -118,14 +137,15 @@
           <div class="pill-group" id="groupTechnique"></div>
         </div>
 
-        <!-- Сума балів -->
         <div class="total-card">
           <span>Сума балів:</span>
           <span class="total-score" id="totalScore">0 / 25</span>
         </div>
       </div>
 
-      <button class="submit-btn" onclick="submitCurrentEvaluation()">Зберегти оцінку</button>
+      <button id="saveBtn" class="submit-btn" onclick="submitCurrentEvaluation()">
+        <span id="saveBtnText">Зберегти оцінку</span>
+      </button>
     </div>
   </div>
 
@@ -159,6 +179,7 @@
         participants = data;
         pIndex = 0;
         wIndex = 0;
+        updateDropdownOptions();
         renderView();
       } catch (err) {
         alert('Помилка підключення: ' + err.message);
@@ -182,6 +203,10 @@
       }
     }
 
+    function isWorkDone(work) {
+      return work.scores.accuracy && work.scores.creativity && work.scores.artistry && work.scores.technique;
+    }
+
     function updateTotal() {
       const sum = (Number(currentScores.accuracy) || 0) + 
                   (Number(currentScores.creativity) || 0) + 
@@ -190,18 +215,56 @@
       document.getElementById('totalScore').textContent = `${sum} / 25`;
     }
 
+    function updateDropdownOptions() {
+      const select = document.getElementById('jumpSelect');
+      select.innerHTML = '';
+      
+      let totalEvaluatedWorks = 0;
+      let totalWorksCount = 0;
+
+      participants.forEach((p, idx) => {
+        const evaluatedCount = p.works.filter(isWorkDone).length;
+        const totalCount = p.works.length;
+        totalEvaluatedWorks += evaluatedCount;
+        totalWorksCount += totalCount;
+
+        const isFullyDone = evaluatedCount === totalCount;
+        const statusMark = isFullyDone ? '✓' : (evaluatedCount > 0 ? '◐' : '○');
+
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `${statusMark} ${idx + 1}. ${p.title} (${evaluatedCount}/${totalCount})`;
+        select.appendChild(opt);
+      });
+
+      // Обновление шкалы общего прогресса
+      const percent = totalWorksCount > 0 ? Math.round((totalEvaluatedWorks / totalWorksCount) * 100) : 0;
+      document.getElementById('progressBar').style.width = `${percent}%`;
+      document.getElementById('progressBar').title = `Оцінено ${totalEvaluatedWorks} з ${totalWorksCount} фото (${percent}%)`;
+    }
+
+    function onSelectParticipant(index) {
+      pIndex = Number(index);
+      wIndex = 0;
+      renderView();
+    }
+
     function renderView() {
       if (!participants.length) return;
       const p = participants[pIndex];
       document.getElementById('participantTitle').textContent = p.title;
-      document.getElementById('counter').textContent = `${pIndex + 1} / ${participants.length}`;
 
+      const select = document.getElementById('jumpSelect');
+      select.value = pIndex;
+
+      // Отрисовка табов фото
       const tabsEl = document.getElementById('workTabs');
       tabsEl.innerHTML = '';
       p.works.forEach((w, idx) => {
         const btn = document.createElement('button');
-        btn.className = `tab-btn ${idx === wIndex ? 'active' : ''}`;
-        btn.textContent = `Фото #${w.workIndex}`;
+        const done = isWorkDone(w);
+        btn.className = `tab-btn ${idx === wIndex ? 'active' : ''} ${done ? 'evaluated' : ''}`;
+        btn.innerHTML = `<span>Фото #${w.workIndex}</span> ${done ? '<span class="tab-badge">✓</span>' : ''}`;
         btn.onclick = () => { wIndex = idx; renderView(); };
         tabsEl.appendChild(btn);
       });
@@ -244,6 +307,13 @@
         return;
       }
 
+      const saveBtn = document.getElementById('saveBtn');
+      const saveBtnText = document.getElementById('saveBtnText');
+      
+      // Анимация отправки
+      saveBtn.classList.add('saving');
+      saveBtnText.textContent = 'Збереження...';
+
       const p = participants[pIndex];
       const w = p.works[wIndex];
 
@@ -269,29 +339,52 @@
         console.error('Помилка запису:', e);
       }
 
-      if (wIndex < p.works.length - 1) {
-        wIndex++;
-        renderView();
-      } else if (pIndex < participants.length - 1) {
-        pIndex++;
-        wIndex = 0;
-        renderView();
-      } else {
-        alert('Усі фотографії оцінено!');
-      }
+      // Анимация успешного сохранения
+      saveBtn.classList.remove('saving');
+      saveBtn.classList.add('saved');
+      saveBtnText.textContent = '✓ Збережено!';
+
+      updateDropdownOptions();
+
+      // Небольшая задержка перед переходом к следующей карточке
+      setTimeout(() => {
+        saveBtn.classList.remove('saved');
+        saveBtnText.textContent = 'Зберегти оцінку';
+
+        if (wIndex < p.works.length - 1) {
+          wIndex++;
+          renderView();
+        } else if (pIndex < participants.length - 1) {
+          pIndex++;
+          wIndex = 0;
+          renderView();
+        } else {
+          alert('Усі фотографії оцінено!');
+        }
+      }, 500);
     }
 
     function nextParticipant() {
-      if (pIndex < participants.length - 1) { pIndex++; wIndex = 0; renderView(); }
+      if (pIndex < participants.length - 1) { 
+        pIndex++; 
+        wIndex = 0; 
+        renderView(); 
+      }
     }
+    
     function prevParticipant() {
-      if (pIndex > 0) { pIndex--; wIndex = 0; renderView(); }
+      if (pIndex > 0) { 
+        pIndex--; 
+        wIndex = 0; 
+        renderView(); 
+      }
     }
 
     function openFullscreen(src) {
       document.getElementById('fsImage').src = src;
       document.getElementById('fsModal').style.display = 'flex';
     }
+    
     function closeFullscreen() {
       document.getElementById('fsModal').style.display = 'none';
     }
