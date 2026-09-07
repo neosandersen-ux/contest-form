@@ -2,6 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Кабінет судді — Оцінювання фото</title>
   <style>
     :root {
@@ -32,8 +33,7 @@
     .image-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; overflow: hidden; position: relative; }
     .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: zoom-in; }
     
-    /* Фолбэк кнопка если фото не открылось в браузере */
-    .open-link-btn { margin-left: 12px; font-size: 12px; color: var(--accent); text-decoration: none; }
+    .open-link-btn { margin-left: 12px; font-size: 13px; color: var(--accent); text-decoration: none; }
     .open-link-btn:hover { text-decoration: underline; }
 
     /* Правая зона: Оценивание */
@@ -82,6 +82,7 @@
 
     <div class="scoring-panel">
       <div>
+        <!-- Точність (10) -->
         <div class="criteria-group">
           <div class="criteria-title">
             <span>Точність</span>
@@ -90,6 +91,7 @@
           <div class="pill-group" id="groupAccuracy"></div>
         </div>
 
+        <!-- Креативність (5) -->
         <div class="criteria-group">
           <div class="criteria-title">
             <span>Креативність</span>
@@ -98,6 +100,7 @@
           <div class="pill-group" id="groupCreativity"></div>
         </div>
 
+        <!-- Художність (5) -->
         <div class="criteria-group">
           <div class="criteria-title">
             <span>Художність</span>
@@ -106,6 +109,7 @@
           <div class="pill-group" id="groupArtistry"></div>
         </div>
 
+        <!-- Технічність (5) -->
         <div class="criteria-group">
           <div class="criteria-title">
             <span>Технічність</span>
@@ -114,6 +118,7 @@
           <div class="pill-group" id="groupTechnique"></div>
         </div>
 
+        <!-- Сума балів -->
         <div class="total-card">
           <span>Сума балів:</span>
           <span class="total-score" id="totalScore">0 / 25</span>
@@ -129,33 +134,36 @@
   </div>
 
   <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwyoTLX19eqGT7cMGCLi_4tpooTMaghpsZzkleL3OLSGx2gFJQjnNEKGonUQMJ0Hxrx/exec';
+
     let participants = [];
     let pIndex = 0;
     let wIndex = 0;
     let currentScores = { accuracy: null, creativity: null, artistry: null, technique: null };
 
-    window.onload = () => {
+    window.onload = async () => {
       buildButtons('groupAccuracy', 10, 'accuracy');
       buildButtons('groupCreativity', 5, 'creativity');
       buildButtons('groupArtistry', 5, 'artistry');
       buildButtons('groupTechnique', 5, 'technique');
 
-      google.script.run
-        .withSuccessHandler(data => {
-          if (!data || data.length === 0) {
-            document.getElementById('participantTitle').textContent = 'У таблиці немає посилань у колонках D, K, R, Y, AF!';
-            return;
-          }
-          participants = data;
-          pIndex = 0;
-          wIndex = 0;
-          renderView();
-        })
-        .withFailureHandler(err => {
-          alert('Помилка завантаження: ' + err.message);
-          document.getElementById('participantTitle').textContent = 'Помилка скрипта';
-        })
-        .getSubmissions();
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+
+        if (!data || data.length === 0 || data.error) {
+          document.getElementById('participantTitle').textContent = data.error || 'У таблиці немає доступних робіт';
+          return;
+        }
+
+        participants = data;
+        pIndex = 0;
+        wIndex = 0;
+        renderView();
+      } catch (err) {
+        alert('Помилка підключення: ' + err.message);
+        document.getElementById('participantTitle').textContent = 'Помилка завантаження';
+      }
     };
 
     function buildButtons(containerId, count, key) {
@@ -200,9 +208,9 @@
 
       const work = p.works[wIndex];
       const img = document.getElementById('mainImage');
+      img.dataset.retried = "false";
       img.src = work.previewUrl;
 
-      // Прямая ссылка на случай закрытых прав доступа к Google Drive
       const extLink = document.getElementById('externalLink');
       extLink.href = work.link;
       extLink.style.display = 'inline';
@@ -217,8 +225,7 @@
 
     function handleImageError(imgEl) {
       const work = participants[pIndex].works[wIndex];
-      // Если превью не отдает картинку (например, закрыт доступ), переключаемся на альтернативный CDN
-      if (work.driveId && !imgEl.dataset.retried) {
+      if (work.driveId && imgEl.dataset.retried !== "true") {
         imgEl.dataset.retried = "true";
         imgEl.src = `https://lh3.googleusercontent.com/d/${work.driveId}=s1600`;
       }
@@ -231,7 +238,7 @@
       });
     }
 
-    function submitCurrentEvaluation() {
+    async function submitCurrentEvaluation() {
       if (!currentScores.accuracy || !currentScores.creativity || !currentScores.artistry || !currentScores.technique) {
         alert('Будь ласка, вкажіть усі 4 критерії оцінювання');
         return;
@@ -250,7 +257,17 @@
       };
 
       w.scores = { ...currentScores };
-      google.script.run.saveEvaluation(payload);
+
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        console.error('Помилка запису:', e);
+      }
 
       if (wIndex < p.works.length - 1) {
         wIndex++;
@@ -260,7 +277,7 @@
         wIndex = 0;
         renderView();
       } else {
-        alert('Вітаємо! Усі роботи цього учасника оцінено.');
+        alert('Усі фотографії оцінено!');
       }
     }
 
